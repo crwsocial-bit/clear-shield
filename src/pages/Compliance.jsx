@@ -151,24 +151,43 @@ export default function Compliance() {
         {/* What a valid cert must show */}
         <Section title="What a Valid Certification Must Include">
           <p className="text-sm text-gray-700 mb-4">
-            When reviewing a certificate of compliance from a manufacturer, confirm it includes all of the following:
+            When reviewing a certificate of compliance from a manufacturer, confirm it includes all of the following.
+            ClearShield captures every required field — the column on the right shows where each item is recorded.
           </p>
-          <ul className="space-y-2.5">
-            {[
-              { item: 'Certification number', detail: 'Unique identifier traceable in the certification body\'s public directory' },
-              { item: 'Issuing body',          detail: 'Name of the ANSI-accredited certification organization (NSF, CSA, IAPMO, UL, etc.)' },
-              { item: 'Product scope',         detail: 'Specific product(s) or product family covered — must match the SKU being sold' },
-              { item: 'Standard certified to', detail: 'Must reference NSF/ANSI 372 explicitly' },
-              { item: 'Issue date',            detail: 'Date the certification was granted or last renewed' },
-              { item: 'Renewal date',          detail: 'The date by which the manufacturer must renew — verify the cert is active, not lapsed' },
-              { item: 'Manufacturer name',     detail: 'Must match the manufacturer of record for the product you are distributing' },
-            ].map(({ item, detail }) => (
-              <li key={item} className="flex gap-3 text-sm">
-                <span className="text-green-500 mt-0.5 shrink-0">✓</span>
-                <span><span className="font-medium text-gray-900">{item}</span> — <span className="text-gray-600">{detail}</span></span>
-              </li>
-            ))}
-          </ul>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="text-left pb-2 font-medium text-gray-500 text-xs pr-4">Required item</th>
+                  <th className="text-left pb-2 font-medium text-gray-500 text-xs pr-4">Why it matters</th>
+                  <th className="text-left pb-2 font-medium text-gray-500 text-xs">ClearShield field</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {[
+                  { item: 'Certification number', detail: 'Traceable in the certification body\'s public directory',                       field: 'Cert Number' },
+                  { item: 'Issuing body',          detail: 'Must be an ANSI-accredited organization (NSF, CSA, IAPMO, UL, etc.)',           field: 'Issuing Body' },
+                  { item: 'Product scope',         detail: 'Confirms the cert covers the specific SKU being sold, not just the brand',      field: 'Cert Scope' },
+                  { item: 'Standard certified to', detail: 'Must reference NSF/ANSI 372 — all certs in ClearShield are presumed NSF/ANSI 372', field: '(implicit — platform standard)' },
+                  { item: 'Issue date',            detail: 'Date the certification was granted or last renewed',                            field: 'Issued Date' },
+                  { item: 'Renewal date',          detail: 'Date by which the manufacturer must renew — verify it hasn\'t lapsed',          field: 'Expiration Date' },
+                  { item: 'Manufacturer name',     detail: 'Must match the manufacturer of record for the product you are distributing',    field: 'Manufacturer' },
+                ].map(({ item, detail, field }) => (
+                  <tr key={item}>
+                    <td className="py-2.5 pr-4 font-medium text-gray-900 align-top">{item}</td>
+                    <td className="py-2.5 pr-4 text-gray-600 align-top">{detail}</td>
+                    <td className="py-2.5 align-top">
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                        field.startsWith('(') ? 'bg-gray-100 text-gray-500' : 'bg-green-100 text-green-700'
+                      }`}>
+                        {field}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Section>
 
         {/* Distributor obligations */}

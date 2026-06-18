@@ -11,6 +11,7 @@ const EMPTY_FORM = {
   manufacturer: '',
   cert_number: '',
   issuing_body: '',
+  cert_scope: '',
   cert_issued_date: '',
   cert_expiration: '',
   po_number: '',
@@ -23,6 +24,7 @@ const FIELDS = [
   { name: 'manufacturer',     label: 'Manufacturer' },
   { name: 'cert_number',      label: 'Cert Number' },
   { name: 'issuing_body',     label: 'Issuing Body' },
+  { name: 'cert_scope',       label: 'Cert Scope',       placeholder: 'e.g. All brass ball valves — ½" to 2"' },
   { name: 'cert_issued_date', label: 'Issued Date',      type: 'date' },
   { name: 'cert_expiration',  label: 'Expiration Date',  type: 'date' },
   { name: 'po_number',        label: 'PO Number' },
@@ -259,7 +261,7 @@ function ProductPanel({ product, onClose, onSaved, onDeleted, companies }) {
           </div>
 
           {/* All other fields with a clear button */}
-          {FIELDS.map(({ name, label, type = 'text', multiline }) => (
+          {FIELDS.map(({ name, label, type = 'text', multiline, placeholder }) => (
             <div key={name}>
               <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
               {name === 'manufacturer' ? (
@@ -283,6 +285,7 @@ function ProductPanel({ product, onClose, onSaved, onDeleted, companies }) {
                     name={name}
                     value={form[name]}
                     onChange={handleChange}
+                    placeholder={placeholder ?? ''}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 pr-8 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   {form[name] && (
