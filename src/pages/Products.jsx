@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { parseCSV } from '../utils/csvParser'
 
@@ -281,6 +282,7 @@ function StatusBadge({ product }) {
 }
 
 export default function Products() {
+  const navigate = useNavigate()
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [importing, setImporting] = useState(false)
@@ -492,7 +494,11 @@ export default function Products() {
                     <td className="px-4 py-3 font-mono text-xs text-gray-900">{p.sku}</td>
                     <td className="px-4 py-3 text-gray-700">{p.part_number ?? '—'}</td>
                     <td className="px-4 py-3 text-gray-700 max-w-xs truncate">{p.description ?? '—'}</td>
-                    <td className="px-4 py-3 text-gray-700">{p.manufacturer ?? '—'}</td>
+                    <td className="px-4 py-3">
+                      {p.manufacturer
+                        ? <button onClick={() => navigate(`/companies?name=${encodeURIComponent(p.manufacturer)}`)} className="text-blue-600 hover:underline text-left text-sm">{p.manufacturer}</button>
+                        : <span className="text-gray-700">—</span>}
+                    </td>
                     <td className="px-4 py-3 font-mono text-xs text-gray-700">{p.cert_number ?? '—'}</td>
                     <td className="px-4 py-3 text-gray-700">{p.cert_issued_date ?? '—'}</td>
                     <td className="px-4 py-3 text-gray-700">{p.cert_expiration ?? '—'}</td>
