@@ -11,7 +11,8 @@ export default function Login() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">ClearShield</h1>
-          <p className="text-gray-500 mt-2 text-sm">NSF/ANSI 372 Compliance Management</p>
+          <p className="text-gray-500 mt-1 text-sm font-medium">Compliance made clear.</p>
+          <p className="text-gray-400 mt-1 text-xs">NSF/ANSI 372 Compliance Management</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">

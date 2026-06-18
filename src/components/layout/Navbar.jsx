@@ -34,7 +34,10 @@ export default function Navbar() {
   return (
     <nav className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
       <div className="flex items-center gap-8">
-        <span className="text-lg font-bold text-gray-900">ClearShield</span>
+        <div>
+          <span className="text-lg font-bold text-gray-900">ClearShield</span>
+          <p className="text-xs text-gray-400 leading-none mt-0.5">Compliance made clear.</p>
+        </div>
         <div className="flex items-center gap-1">
           <NavLink
             to="/"
