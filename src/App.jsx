@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabaseClient'
+import AppLayout from './components/layout/AppLayout'
 import Dashboard from './pages/Dashboard'
 import Products from './pages/Products'
 import Reports from './pages/Reports'
@@ -23,7 +24,11 @@ function ProtectedRoute({ children }) {
 
   if (session === undefined) return null
 
-  return session ? children : <Navigate to="/login" replace />
+  return session ? (
+    <AppLayout>{children}</AppLayout>
+  ) : (
+    <Navigate to="/login" replace />
+  )
 }
 
 export default function App() {
