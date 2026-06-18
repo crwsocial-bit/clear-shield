@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import Products from './pages/Products'
 import Reports from './pages/Reports'
 import Login from './pages/Login'
+import ResetPassword from './pages/ResetPassword'
 
 function ProtectedRoute({ children }) {
   const [session, setSession] = useState(undefined)
@@ -36,6 +37,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route
           path="/"
           element={
