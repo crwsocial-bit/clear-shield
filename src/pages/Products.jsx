@@ -2,6 +2,117 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { parseCSV } from '../utils/csvParser'
 
+const EMPTY_FORM = {
+  part_number: '',
+  description: '',
+  manufacturer: '',
+  cert_number: '',
+  issuing_body: '',
+  cert_issued_date: '',
+  cert_expiration: '',
+  po_number: '',
+}
+
+function EditPanel({ product, onClose, onSaved }) {
+  const [form, setForm] = useState({ ...EMPTY_FORM, ...Object.fromEntries(
+    Object.keys(EMPTY_FORM).map(k => [k, product[k] ?? ''])
+  )})
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  function handleChange(e) {
+    setForm(f => ({ ...f, [e.target.name]: e.target.value }))
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setSaving(true)
+    setError('')
+
+    const patch = Object.fromEntries(
+      Object.entries(form).map(([k, v]) => [k, v === '' ? null : v])
+    )
+
+    const { data, error: err } = await supabase
+      .from('products')
+      .update(patch)
+      .eq('id', product.id)
+      .select()
+      .single()
+
+    if (err) {
+      setError(err.message)
+      setSaving(false)
+    } else {
+      onSaved(data)
+    }
+  }
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 bg-black/30 z-40"
+        onClick={onClose}
+      />
+      <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-xl z-50 flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">Edit Product</h2>
+            <p className="text-xs text-gray-500 font-mono mt-0.5">{product.sku}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg">
+              {error}
+            </div>
+          )}
+
+          {[
+            { name: 'part_number',     label: 'Part Number' },
+            { name: 'description',     label: 'Description' },
+            { name: 'manufacturer',    label: 'Manufacturer' },
+            { name: 'cert_number',     label: 'Cert Number' },
+            { name: 'issuing_body',    label: 'Issuing Body' },
+            { name: 'cert_issued_date',label: 'Issued Date', type: 'date' },
+            { name: 'cert_expiration', label: 'Expiration Date', type: 'date' },
+            { name: 'po_number',       label: 'PO Number' },
+          ].map(({ name, label, type = 'text' }) => (
+            <div key={name}>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+              <input
+                type={type}
+                name={name}
+                value={form[name]}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          ))}
+        </form>
+
+        <div className="px-6 py-4 border-t border-gray-200 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 border border-gray-300 text-gray-700 text-sm font-medium py-2 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={saving}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium py-2 rounded-lg transition-colors"
+          >
+            {saving ? 'Saving…' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
+    </>
+  )
+}
+
 function certStatus(product) {
   if (!product.cert_number) return 'missing'
   if (!product.cert_expiration) return 'no-date'
@@ -43,7 +154,29 @@ export default function Products() {
   const [importing, setImporting] = useState(false)
   const [importResult, setImportResult] = useState(null)
   const [error, setError] = useState('')
+  const [editing, setEditing] = useState(null)
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
   const fileInputRef = useRef()
+
+  function handleSaved(updated) {
+    setProducts(ps => ps.map(p => p.id === updated.id ? updated : p))
+    setEditing(null)
+  }
+
+  const filtered = products.filter(p => {
+    if (statusFilter !== 'all' && certStatus(p) !== statusFilter) return false
+    if (search) {
+      const q = search.toLowerCase()
+      return (
+        p.sku?.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q) ||
+        p.manufacturer?.toLowerCase().includes(q) ||
+        p.part_number?.toLowerCase().includes(q)
+      )
+    }
+    return true
+  })
 
   useEffect(() => {
     fetchProducts()
@@ -132,6 +265,30 @@ export default function Products() {
         </div>
       </div>
 
+      {products.length > 0 && (
+        <div className="flex gap-3 mb-4">
+          <input
+            type="text"
+            placeholder="Search SKU, description, manufacturer…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <select
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All Statuses</option>
+            <option value="valid">Valid</option>
+            <option value="expiring">Expiring Soon</option>
+            <option value="expired">Expired</option>
+            <option value="missing">No Cert</option>
+            <option value="no-date">No Exp. Date</option>
+          </select>
+        </div>
+      )}
+
       {error && (
         <div className="mb-4 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">
           {error}
@@ -164,6 +321,16 @@ export default function Products() {
             Expected columns: SKU, Part Number, Description, Manufacturer, Cert Number, Expiration Date, PO Number
           </p>
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center">
+          <p className="text-gray-500 text-sm">No products match your search.</p>
+          <button
+            onClick={() => { setSearch(''); setStatusFilter('all') }}
+            className="mt-2 text-blue-600 text-sm hover:underline"
+          >
+            Clear filters
+          </button>
+        </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
@@ -179,10 +346,11 @@ export default function Products() {
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Expiration</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">PO Number</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                  <th className="px-4 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {products.map(p => (
+                {filtered.map(p => (
                   <tr key={p.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 font-mono text-xs text-gray-900">{p.sku}</td>
                     <td className="px-4 py-3 text-gray-700">{p.part_number ?? '—'}</td>
@@ -195,12 +363,28 @@ export default function Products() {
                     <td className="px-4 py-3">
                       <StatusBadge product={p} />
                     </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => setEditing(p)}
+                        className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        Edit
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </div>
+      )}
+
+      {editing && (
+        <EditPanel
+          product={editing}
+          onClose={() => setEditing(null)}
+          onSaved={handleSaved}
+        />
       )}
     </div>
   )
