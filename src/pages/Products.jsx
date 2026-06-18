@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { parseCSV } from '../utils/csvParser'
+import { TypeBadge } from './Companies'
 
 const EMPTY_FORM = {
   sku: '',
@@ -26,7 +27,60 @@ const FIELDS = [
   { name: 'po_number',        label: 'PO Number' },
 ]
 
-function ProductPanel({ product, onClose, onSaved, onDeleted }) {
+function ManufacturerField({ value, onChange, companies }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  const matches = companies.filter(c =>
+    !value || c.name.toLowerCase().includes(value.toLowerCase())
+  )
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  return (
+    <div className="relative" ref={ref}>
+      <div className="relative">
+        <input
+          type="text"
+          value={value}
+          onChange={e => { onChange(e.target.value); setOpen(true) }}
+          onFocus={() => setOpen(true)}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 pr-8 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        {value && (
+          <button type="button" onClick={() => { onChange(''); setOpen(false) }} tabIndex={-1}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 text-lg leading-none">&times;</button>
+        )}
+      </div>
+
+      {open && matches.length > 0 && (
+        <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
+          {matches.map(c => (
+            <button
+              key={c.id}
+              type="button"
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => { onChange(c.name); setOpen(false) }}
+              className="w-full text-left px-3 py-2.5 text-sm hover:bg-gray-50 flex items-center justify-between gap-2 border-b border-gray-50 last:border-0"
+            >
+              <span className="text-gray-900">{c.name}</span>
+              <TypeBadge company={c} />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ProductPanel({ product, onClose, onSaved, onDeleted, companies }) {
+  const navigate = useNavigate()
   const isNew = !product
   const [form, setForm] = useState(
     isNew
@@ -35,10 +89,12 @@ function ProductPanel({ product, onClose, onSaved, onDeleted }) {
           Object.keys(EMPTY_FORM).map(k => [k, product[k] ?? ''])
         )}
   )
-  const [saving, setSaving] = useState(false)
-  const [deleting, setDeleting] = useState(false)
+  const [saving, setSaving]               = useState(false)
+  const [deleting, setDeleting]           = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError]                 = useState('')
+  const [pendingSave, setPendingSave]     = useState(null)  // { data, isNew }
+  const [promptMfr, setPromptMfr]         = useState(null)  // manufacturer name to prompt
 
   function handleChange(e) {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }))
@@ -69,12 +125,8 @@ function ProductPanel({ product, onClose, onSaved, onDeleted }) {
         .select()
         .single()
 
-      if (err) {
-        setError(err.message)
-        setSaving(false)
-      } else {
-        onSaved(data, true)
-      }
+      if (err) { setError(err.message); setSaving(false) }
+      else await checkAndPrompt(data, true, payload.manufacturer)
     } else {
       const { sku: _sku, ...patch } = payload
       const { data, error: err } = await supabase
@@ -84,13 +136,27 @@ function ProductPanel({ product, onClose, onSaved, onDeleted }) {
         .select()
         .single()
 
-      if (err) {
-        setError(err.message)
+      if (err) { setError(err.message); setSaving(false) }
+      else await checkAndPrompt(data, false, payload.manufacturer)
+    }
+  }
+
+  async function checkAndPrompt(data, wasNew, manufacturer) {
+    if (manufacturer) {
+      const { data: existing } = await supabase
+        .from('companies')
+        .select('id')
+        .ilike('name', manufacturer)
+        .maybeSingle()
+
+      if (!existing) {
+        setPendingSave({ data, isNew: wasNew })
+        setPromptMfr(manufacturer)
         setSaving(false)
-      } else {
-        onSaved(data, false)
+        return
       }
     }
+    onSaved(data, wasNew)
   }
 
   async function handleDelete() {
@@ -127,8 +193,40 @@ function ProductPanel({ product, onClose, onSaved, onDeleted }) {
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
         </div>
 
+        {/* Post-save company prompt */}
+        {promptMfr && (
+          <div className="flex-1 flex flex-col items-center justify-center px-8 text-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-xl">✓</div>
+            <div>
+              <p className="text-gray-900 font-semibold">Product saved.</p>
+              <p className="text-gray-500 text-sm mt-1">
+                <span className="font-medium text-gray-700">{promptMfr}</span> isn't in your Companies directory. Would you like to add their contact info?
+              </p>
+            </div>
+            <div className="flex gap-3 w-full">
+              <button
+                type="button"
+                onClick={() => onSaved(pendingSave.data, pendingSave.isNew)}
+                className="flex-1 border border-gray-300 text-gray-600 text-sm font-medium py-2 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Skip
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onSaved(pendingSave.data, pendingSave.isNew)
+                  navigate(`/companies?name=${encodeURIComponent(promptMfr)}`)
+                }}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded-lg transition-colors"
+              >
+                Add Company
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Form */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+        <form onSubmit={handleSubmit} className={`flex-1 overflow-y-auto px-6 py-5 space-y-4 ${promptMfr ? 'hidden' : ''}`}>
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg">
               {error}
@@ -162,25 +260,33 @@ function ProductPanel({ product, onClose, onSaved, onDeleted }) {
           {FIELDS.map(({ name, label, type = 'text' }) => (
             <div key={name}>
               <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-              <div className="relative">
-                <input
-                  type={type}
-                  name={name}
-                  value={form[name]}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 pr-8 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              {name === 'manufacturer' ? (
+                <ManufacturerField
+                  value={form.manufacturer}
+                  onChange={val => setForm(f => ({ ...f, manufacturer: val }))}
+                  companies={companies}
                 />
-                {form[name] && (
-                  <button
-                    type="button"
-                    onClick={() => clearField(name)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 text-lg leading-none"
-                    tabIndex={-1}
-                  >
-                    &times;
-                  </button>
-                )}
-              </div>
+              ) : (
+                <div className="relative">
+                  <input
+                    type={type}
+                    name={name}
+                    value={form[name]}
+                    onChange={handleChange}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 pr-8 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  {form[name] && (
+                    <button
+                      type="button"
+                      onClick={() => clearField(name)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 text-lg leading-none"
+                      tabIndex={-1}
+                    >
+                      &times;
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           ))}
 
@@ -224,23 +330,25 @@ function ProductPanel({ product, onClose, onSaved, onDeleted }) {
         </form>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 border border-gray-300 text-gray-700 text-sm font-medium py-2 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={saving}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium py-2 rounded-lg transition-colors"
-          >
-            {saving ? 'Saving…' : isNew ? 'Add Product' : 'Save Changes'}
-          </button>
-        </div>
+        {!promptMfr && (
+          <div className="px-6 py-4 border-t border-gray-200 flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 border border-gray-300 text-gray-700 text-sm font-medium py-2 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={saving}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium py-2 rounded-lg transition-colors"
+            >
+              {saving ? 'Saving…' : isNew ? 'Add Product' : 'Save Changes'}
+            </button>
+          </div>
+        )}
       </div>
     </>
   )
@@ -283,17 +391,22 @@ function StatusBadge({ product }) {
 
 export default function Products() {
   const navigate = useNavigate()
-  const [products, setProducts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [importing, setImporting] = useState(false)
+  const [products, setProducts]         = useState([])
+  const [companies, setCompanies]       = useState([])
+  const [loading, setLoading]           = useState(true)
+  const [importing, setImporting]       = useState(false)
   const [importResult, setImportResult] = useState(null)
-  const [error, setError] = useState('')
-  const [panel, setPanel] = useState(null) // null | 'new' | product object
-  const [search, setSearch] = useState('')
+  const [error, setError]               = useState('')
+  const [panel, setPanel]               = useState(null)
+  const [search, setSearch]             = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const fileInputRef = useRef()
 
-  useEffect(() => { fetchProducts() }, [])
+  useEffect(() => {
+    fetchProducts()
+    supabase.from('companies').select('id, name, type, custom_type').order('name')
+      .then(({ data }) => setCompanies(data ?? []))
+  }, [])
 
   async function fetchProducts() {
     setLoading(true)
@@ -524,6 +637,7 @@ export default function Products() {
       {panel && (
         <ProductPanel
           product={panel === 'new' ? null : panel}
+          companies={companies}
           onClose={() => setPanel(null)}
           onSaved={handleSaved}
           onDeleted={handleDeleted}
