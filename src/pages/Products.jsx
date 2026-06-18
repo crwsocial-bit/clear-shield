@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import { parseCSV } from '../utils/csvParser'
 
 const EMPTY_FORM = {
+  sku: '',
   part_number: '',
   description: '',
   manufacturer: '',
@@ -13,56 +14,119 @@ const EMPTY_FORM = {
   po_number: '',
 }
 
-function EditPanel({ product, onClose, onSaved }) {
-  const [form, setForm] = useState({ ...EMPTY_FORM, ...Object.fromEntries(
-    Object.keys(EMPTY_FORM).map(k => [k, product[k] ?? ''])
-  )})
+const FIELDS = [
+  { name: 'part_number',      label: 'Part Number' },
+  { name: 'description',      label: 'Description' },
+  { name: 'manufacturer',     label: 'Manufacturer' },
+  { name: 'cert_number',      label: 'Cert Number' },
+  { name: 'issuing_body',     label: 'Issuing Body' },
+  { name: 'cert_issued_date', label: 'Issued Date',      type: 'date' },
+  { name: 'cert_expiration',  label: 'Expiration Date',  type: 'date' },
+  { name: 'po_number',        label: 'PO Number' },
+]
+
+function ProductPanel({ product, onClose, onSaved, onDeleted }) {
+  const isNew = !product
+  const [form, setForm] = useState(
+    isNew
+      ? { ...EMPTY_FORM }
+      : { ...EMPTY_FORM, ...Object.fromEntries(
+          Object.keys(EMPTY_FORM).map(k => [k, product[k] ?? ''])
+        )}
+  )
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [error, setError] = useState('')
 
   function handleChange(e) {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }))
   }
 
+  function clearField(name) {
+    setForm(f => ({ ...f, [name]: '' }))
+  }
+
   async function handleSubmit(e) {
-    e.preventDefault()
+    e?.preventDefault()
+    if (!form.sku.trim()) {
+      setError('SKU is required.')
+      return
+    }
     setSaving(true)
     setError('')
 
-    const patch = Object.fromEntries(
-      Object.entries(form).map(([k, v]) => [k, v === '' ? null : v])
+    const payload = Object.fromEntries(
+      Object.entries(form).map(([k, v]) => [k, v.trim() === '' ? null : v.trim()])
     )
 
-    const { data, error: err } = await supabase
+    if (isNew) {
+      const { data: { user } } = await supabase.auth.getUser()
+      const { data, error: err } = await supabase
+        .from('products')
+        .insert({ ...payload, user_id: user.id })
+        .select()
+        .single()
+
+      if (err) {
+        setError(err.message)
+        setSaving(false)
+      } else {
+        onSaved(data, true)
+      }
+    } else {
+      const { sku: _sku, ...patch } = payload
+      const { data, error: err } = await supabase
+        .from('products')
+        .update(patch)
+        .eq('id', product.id)
+        .select()
+        .single()
+
+      if (err) {
+        setError(err.message)
+        setSaving(false)
+      } else {
+        onSaved(data, false)
+      }
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true)
+    const { error: err } = await supabase
       .from('products')
-      .update(patch)
+      .delete()
       .eq('id', product.id)
-      .select()
-      .single()
 
     if (err) {
       setError(err.message)
-      setSaving(false)
+      setDeleting(false)
+      setConfirmDelete(false)
     } else {
-      onSaved(data)
+      onDeleted(product.id)
     }
   }
 
   return (
     <>
-      <div
-        className="fixed inset-0 bg-black/30 z-40"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} />
       <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-xl z-50 flex flex-col">
+
+        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div>
-            <h2 className="text-base font-semibold text-gray-900">Edit Product</h2>
-            <p className="text-xs text-gray-500 font-mono mt-0.5">{product.sku}</p>
+            <h2 className="text-base font-semibold text-gray-900">
+              {isNew ? 'Add Product' : 'Edit Product'}
+            </h2>
+            {!isNew && (
+              <p className="text-xs text-gray-500 font-mono mt-0.5">{product.sku}</p>
+            )}
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
         </div>
 
+        {/* Form */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg">
@@ -70,42 +134,110 @@ function EditPanel({ product, onClose, onSaved }) {
             </div>
           )}
 
-          {[
-            { name: 'part_number',     label: 'Part Number' },
-            { name: 'description',     label: 'Description' },
-            { name: 'manufacturer',    label: 'Manufacturer' },
-            { name: 'cert_number',     label: 'Cert Number' },
-            { name: 'issuing_body',    label: 'Issuing Body' },
-            { name: 'cert_issued_date',label: 'Issued Date', type: 'date' },
-            { name: 'cert_expiration', label: 'Expiration Date', type: 'date' },
-            { name: 'po_number',       label: 'PO Number' },
-          ].map(({ name, label, type = 'text' }) => (
-            <div key={name}>
-              <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+          {/* SKU — editable only when adding */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              SKU <span className="text-red-500">*</span>
+            </label>
+            {isNew ? (
               <input
-                type={type}
-                name={name}
-                value={form[name]}
+                type="text"
+                name="sku"
+                value={form.sku}
                 onChange={handleChange}
+                placeholder="e.g. BRS-1234"
+                autoFocus
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+            ) : (
+              <p className="text-sm text-gray-400 font-mono px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
+                {product.sku}
+                <span className="ml-2 text-xs text-gray-400 font-sans">(cannot be changed)</span>
+              </p>
+            )}
+          </div>
+
+          {/* All other fields with a clear button */}
+          {FIELDS.map(({ name, label, type = 'text' }) => (
+            <div key={name}>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+              <div className="relative">
+                <input
+                  type={type}
+                  name={name}
+                  value={form[name]}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 pr-8 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {form[name] && (
+                  <button
+                    type="button"
+                    onClick={() => clearField(name)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 text-lg leading-none"
+                    tabIndex={-1}
+                  >
+                    &times;
+                  </button>
+                )}
+              </div>
             </div>
           ))}
+
+          {/* Delete — edit mode only */}
+          {!isNew && (
+            <div className="pt-4 border-t border-gray-100">
+              {confirmDelete ? (
+                <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                  <p className="text-sm text-red-700 font-medium mb-3">
+                    Delete <span className="font-mono">{product.sku}</span>? This cannot be undone.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(false)}
+                      className="flex-1 border border-gray-300 text-gray-700 text-sm font-medium py-1.5 rounded-lg hover:bg-white transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDelete}
+                      disabled={deleting}
+                      className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white text-sm font-medium py-1.5 rounded-lg transition-colors"
+                    >
+                      {deleting ? 'Deleting…' : 'Yes, delete'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(true)}
+                  className="text-sm text-red-500 hover:text-red-700 font-medium"
+                >
+                  Delete this product…
+                </button>
+              )}
+            </div>
+          )}
         </form>
 
+        {/* Footer */}
         <div className="px-6 py-4 border-t border-gray-200 flex gap-3">
           <button
+            type="button"
             onClick={onClose}
             className="flex-1 border border-gray-300 text-gray-700 text-sm font-medium py-2 rounded-lg hover:bg-gray-50 transition-colors"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={handleSubmit}
             disabled={saving}
             className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium py-2 rounded-lg transition-colors"
           >
-            {saving ? 'Saving…' : 'Save Changes'}
+            {saving ? 'Saving…' : isNew ? 'Add Product' : 'Save Changes'}
           </button>
         </div>
       </div>
@@ -154,14 +286,69 @@ export default function Products() {
   const [importing, setImporting] = useState(false)
   const [importResult, setImportResult] = useState(null)
   const [error, setError] = useState('')
-  const [editing, setEditing] = useState(null)
+  const [panel, setPanel] = useState(null) // null | 'new' | product object
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const fileInputRef = useRef()
 
-  function handleSaved(updated) {
-    setProducts(ps => ps.map(p => p.id === updated.id ? updated : p))
-    setEditing(null)
+  useEffect(() => { fetchProducts() }, [])
+
+  async function fetchProducts() {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('sku', { ascending: true })
+    if (error) setError(error.message)
+    else setProducts(data)
+    setLoading(false)
+  }
+
+  function handleSaved(saved, isNew) {
+    setProducts(ps =>
+      isNew
+        ? [...ps, saved].sort((a, b) => a.sku.localeCompare(b.sku))
+        : ps.map(p => p.id === saved.id ? saved : p)
+    )
+    setPanel(null)
+  }
+
+  function handleDeleted(id) {
+    setProducts(ps => ps.filter(p => p.id !== id))
+    setPanel(null)
+  }
+
+  async function handleFileChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    setImporting(true)
+    setImportResult(null)
+    setError('')
+
+    try {
+      const { rows, skipped, unmappedHeaders } = await parseCSV(file)
+      if (!rows.length) {
+        setError('No valid rows found. Make sure your CSV has a SKU column.')
+        setImporting(false)
+        return
+      }
+      const { data: { user } } = await supabase.auth.getUser()
+      const records = rows.map(r => ({ ...r, user_id: user.id }))
+      const { error: upsertError } = await supabase
+        .from('products')
+        .upsert(records, { onConflict: 'user_id,sku', count: 'exact' })
+      if (upsertError) {
+        setError(upsertError.message)
+      } else {
+        setImportResult({ inserted: rows.length, skipped, unmappedHeaders })
+        await fetchProducts()
+      }
+    } catch (err) {
+      setError(err.message)
+    }
+
+    setImporting(false)
+    fileInputRef.current.value = ''
   }
 
   const filtered = products.filter(p => {
@@ -178,76 +365,25 @@ export default function Products() {
     return true
   })
 
-  useEffect(() => {
-    fetchProducts()
-  }, [])
-
-  async function fetchProducts() {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .order('sku', { ascending: true })
-
-    if (error) {
-      setError(error.message)
-    } else {
-      setProducts(data)
-    }
-    setLoading(false)
-  }
-
-  async function handleFileChange(e) {
-    const file = e.target.files[0]
-    if (!file) return
-
-    setImporting(true)
-    setImportResult(null)
-    setError('')
-
-    try {
-      const { rows, skipped, unmappedHeaders } = await parseCSV(file)
-
-      if (!rows.length) {
-        setError('No valid rows found. Make sure your CSV has a SKU column.')
-        setImporting(false)
-        return
-      }
-
-      const { data: { user } } = await supabase.auth.getUser()
-
-      const records = rows.map(r => ({ ...r, user_id: user.id }))
-
-      const { error: upsertError, count } = await supabase
-        .from('products')
-        .upsert(records, { onConflict: 'user_id,sku', count: 'exact' })
-
-      if (upsertError) {
-        setError(upsertError.message)
-      } else {
-        setImportResult({ inserted: rows.length, skipped, unmappedHeaders })
-        await fetchProducts()
-      }
-    } catch (err) {
-      setError(err.message)
-    }
-
-    setImporting(false)
-    fileInputRef.current.value = ''
-  }
-
   return (
     <div>
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Products</h1>
           <p className="text-gray-500 text-sm mt-1">
             {products.length > 0
               ? `${products.length} SKU${products.length !== 1 ? 's' : ''} in your catalog`
-              : 'Import a CSV to populate your catalog'}
+              : 'Add products manually or import a CSV'}
           </p>
         </div>
-        <div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setPanel('new')}
+            className="border border-gray-300 hover:border-gray-400 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            + Add Product
+          </button>
           <input
             ref={fileInputRef}
             type="file"
@@ -265,6 +401,7 @@ export default function Products() {
         </div>
       </div>
 
+      {/* Search + filter */}
       {products.length > 0 && (
         <div className="flex gap-3 mb-4">
           <input
@@ -307,18 +444,18 @@ export default function Products() {
         </div>
       )}
 
+      {/* Table */}
       {loading ? (
-        <div className="flex items-center justify-center h-48 text-gray-400 text-sm">
-          Loading…
-        </div>
+        <div className="flex items-center justify-center h-48 text-gray-400 text-sm">Loading…</div>
       ) : products.length === 0 ? (
         <div className="bg-white rounded-xl border border-dashed border-gray-300 p-12 text-center">
           <p className="text-gray-900 font-medium">No products yet</p>
           <p className="text-gray-500 text-sm mt-1">
-            Click <span className="font-medium">Import CSV</span> to upload your product catalog.
+            Click <span className="font-medium">+ Add Product</span> to add one manually, or{' '}
+            <span className="font-medium">Import CSV</span> to bulk upload.
           </p>
           <p className="text-gray-400 text-xs mt-3">
-            Expected columns: SKU, Part Number, Description, Manufacturer, Cert Number, Expiration Date, PO Number
+            Expected CSV columns: SKU, Part Number, Description, Manufacturer, Cert Number, Expiration Date, PO Number
           </p>
         </div>
       ) : filtered.length === 0 ? (
@@ -360,12 +497,10 @@ export default function Products() {
                     <td className="px-4 py-3 text-gray-700">{p.cert_issued_date ?? '—'}</td>
                     <td className="px-4 py-3 text-gray-700">{p.cert_expiration ?? '—'}</td>
                     <td className="px-4 py-3 text-gray-700">{p.po_number ?? '—'}</td>
-                    <td className="px-4 py-3">
-                      <StatusBadge product={p} />
-                    </td>
+                    <td className="px-4 py-3"><StatusBadge product={p} /></td>
                     <td className="px-4 py-3">
                       <button
-                        onClick={() => setEditing(p)}
+                        onClick={() => setPanel(p)}
                         className="text-xs text-blue-600 hover:text-blue-800 font-medium"
                       >
                         Edit
@@ -379,11 +514,13 @@ export default function Products() {
         </div>
       )}
 
-      {editing && (
-        <EditPanel
-          product={editing}
-          onClose={() => setEditing(null)}
+      {/* Slide-over panel */}
+      {panel && (
+        <ProductPanel
+          product={panel === 'new' ? null : panel}
+          onClose={() => setPanel(null)}
           onSaved={handleSaved}
+          onDeleted={handleDeleted}
         />
       )}
     </div>
