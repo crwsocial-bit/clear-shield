@@ -85,6 +85,69 @@ export default function Compliance() {
           </div>
         </Section>
 
+        {/* Annual renewal model */}
+        <Section title="How NSF/ANSI 372 Certification Works — Annual Renewal Model">
+          <p className="text-sm text-gray-700 leading-relaxed mb-4">
+            NSF/ANSI 372 certification is <span className="font-medium">not a one-time event</span>. It is valid for
+            one year and must be actively renewed by the manufacturer on an annual basis. The certification body
+            maintains ongoing oversight throughout the year through the following mechanisms:
+          </p>
+          <ul className="space-y-2.5 mb-5">
+            {[
+              { item: 'Annual facility audits',     detail: 'Inspectors review manufacturing plants and confirm material formulations match what was originally certified.' },
+              { item: 'Periodic retesting',          detail: 'Products are pulled from the production line and retested to verify the 0.25% weighted average lead limit is still met.' },
+              { item: 'Unannounced inspections',     detail: 'NSF inspectors may visit a manufacturer\'s facility without advance notice at any point during the certification year.' },
+              { item: 'Change reviews',              detail: 'Any changes to manufacturing processes, material suppliers, or product design must be reviewed and approved before the change is made.' },
+            ].map(({ item, detail }) => (
+              <li key={item} className="flex gap-3 text-sm">
+                <span className="text-blue-500 mt-0.5 shrink-0">→</span>
+                <span><span className="font-medium text-gray-900">{item}</span> — <span className="text-gray-600">{detail}</span></span>
+              </li>
+            ))}
+          </ul>
+          <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3 text-sm text-blue-800">
+            <span className="font-semibold">Think of it like a driver's license.</span> The manufacturer must renew
+            their "license" every year to prove they are still operating safely. As long as their license was valid on
+            the day they manufactured and sold you the product, that product is legally compliant.
+          </div>
+        </Section>
+
+        {/* Who is responsible */}
+        <Section title="Who Is Responsible for Certification — Manufacturer vs. Distributor">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-gray-50 rounded-lg p-4">
+              <p className="text-sm font-semibold text-gray-900 mb-2">Manufacturer's responsibility</p>
+              <ul className="space-y-1.5 text-sm text-gray-700">
+                {[
+                  'Obtain initial NSF/ANSI 372 certification',
+                  'Pay renewal fees and pass audits every year',
+                  'Maintain consistent materials and processes',
+                  'Notify the cert body of any product changes',
+                  'Ensure their listing stays active in the cert body\'s public directory',
+                ].map((t, i) => <li key={i} className="flex gap-2"><span className="text-gray-400 shrink-0">•</span>{t}</li>)}
+              </ul>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <p className="text-sm font-semibold text-gray-900 mb-2">Distributor's responsibility</p>
+              <ul className="space-y-1.5 text-sm text-gray-700">
+                {[
+                  'Verify the manufacturer\'s cert is active at time of purchase',
+                  'Retain cert documentation for every SKU in your catalog',
+                  'Monitor cert renewal dates and re-verify annually',
+                  'Stop selling any product whose cert lapses or is revoked',
+                  'Produce documentation upon request from customers or regulators',
+                ].map((t, i) => <li key={i} className="flex gap-2"><span className="text-gray-400 shrink-0">•</span>{t}</li>)}
+              </ul>
+            </div>
+          </div>
+          <p className="text-sm text-gray-600 mt-4">
+            <span className="font-medium text-gray-800">Important: </span>
+            Once you purchase a certified product, that product does not need to be re-certified by you.
+            Your obligation is to verify the manufacturer's certification was active on the date of manufacture/sale,
+            and to monitor their ongoing renewal status.
+          </p>
+        </Section>
+
         {/* What a valid cert must show */}
         <Section title="What a Valid Certification Must Include">
           <p className="text-sm text-gray-700 mb-4">
@@ -92,12 +155,12 @@ export default function Compliance() {
           </p>
           <ul className="space-y-2.5">
             {[
-              { item: 'Certification number', detail: 'Unique identifier traceable in the certification body\'s public database' },
+              { item: 'Certification number', detail: 'Unique identifier traceable in the certification body\'s public directory' },
               { item: 'Issuing body',          detail: 'Name of the ANSI-accredited certification organization (NSF, CSA, IAPMO, UL, etc.)' },
-              { item: 'Product scope',         detail: 'Specific product(s) or product family covered — certificate must match the SKU being sold' },
+              { item: 'Product scope',         detail: 'Specific product(s) or product family covered — must match the SKU being sold' },
               { item: 'Standard certified to', detail: 'Must reference NSF/ANSI 372 explicitly' },
               { item: 'Issue date',            detail: 'Date the certification was granted or last renewed' },
-              { item: 'Expiration date',       detail: 'Certifications are not indefinite — confirm the cert is current at time of sale' },
+              { item: 'Renewal date',          detail: 'The date by which the manufacturer must renew — verify the cert is active, not lapsed' },
               { item: 'Manufacturer name',     detail: 'Must match the manufacturer of record for the product you are distributing' },
             ].map(({ item, detail }) => (
               <li key={item} className="flex gap-3 text-sm">
