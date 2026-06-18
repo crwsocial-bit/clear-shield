@@ -10,6 +10,7 @@ import ResetPassword from './pages/ResetPassword'
 import Settings from './pages/Settings'
 import Companies from './pages/Companies'
 import CompanyDetail from './pages/CompanyDetail'
+import Compliance from './pages/Compliance'
 
 function ProtectedRoute({ children }) {
   const [session, setSession] = useState(undefined)
@@ -62,6 +63,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <CompanyDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/compliance"
+          element={
+            <ProtectedRoute>
+              <Compliance />
             </ProtectedRoute>
           }
         />
