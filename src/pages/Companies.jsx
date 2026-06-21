@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { useAuditList } from '../lib/auditListContext'
 
 export const COMPANY_TYPES = ['Manufacturer', 'Customer', 'Utility', 'Distributor', 'Other']
 
@@ -166,6 +167,7 @@ export default function Companies() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const nameParam = searchParams.get('name')
+  const { toggle, isSelected } = useAuditList()
 
   const [companies, setCompanies] = useState([])
   const [loading, setLoading]     = useState(true)
@@ -253,6 +255,7 @@ export default function Companies() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="px-4 py-3 w-8" />
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Type</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Phone</th>
@@ -260,15 +263,28 @@ export default function Companies() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filtered.map(c => (
-                <tr key={c.id} onClick={() => navigate(`/companies/${c.id}`)}
-                  className="hover:bg-gray-50 cursor-pointer transition-colors">
-                  <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
-                  <td className="px-4 py-3"><TypeBadge company={c} /></td>
-                  <td className="px-4 py-3 text-gray-600">{c.phone ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-600">{c.email ?? '—'}</td>
-                </tr>
-              ))}
+              {filtered.map(c => {
+                const selected = isSelected('company', c.id)
+                return (
+                  <tr key={c.id}
+                    onClick={() => navigate(`/companies/${c.id}`)}
+                    className={`hover:bg-gray-50 cursor-pointer transition-colors ${selected ? 'bg-blue-50' : ''}`}
+                  >
+                    <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        onChange={() => toggle({ type: 'company', id: c.id, label: c.name, sublabel: c.type })}
+                        className="w-4 h-4 accent-blue-600 cursor-pointer"
+                      />
+                    </td>
+                    <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
+                    <td className="px-4 py-3"><TypeBadge company={c} /></td>
+                    <td className="px-4 py-3 text-gray-600">{c.phone ?? '—'}</td>
+                    <td className="px-4 py-3 text-gray-600">{c.email ?? '—'}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

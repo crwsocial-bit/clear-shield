@@ -6,11 +6,25 @@ const TODAY = new Date().toISOString().split('T')[0]
 const IN_90 = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
 function certStatus(p) {
-  if (!p.cert_number) return 'missing'
-  if (!p.cert_expiration) return 'no-date'
-  if (p.cert_expiration < TODAY) return 'expired'
-  if (p.cert_expiration <= IN_90) return 'expiring'
+  const docs = p.cert_documents ?? []
+  if (docs.length === 0) return 'missing'
+  const active = docs.filter(d => !d.cert_expiration || d.cert_expiration >= TODAY)
+  if (active.length === 0) return 'expired'
+  if (active.some(d => d.cert_expiration && d.cert_expiration <= IN_90)) return 'expiring'
   return 'valid'
+}
+
+function primaryExpiration(product, type) {
+  const docs = product.cert_documents ?? []
+  if (type === 'expired') {
+    const expired = docs.filter(d => d.cert_expiration && d.cert_expiration < TODAY)
+    return expired.sort((a, b) => b.cert_expiration.localeCompare(a.cert_expiration))[0]?.cert_expiration ?? null
+  }
+  if (type === 'expiring') {
+    const expiring = docs.filter(d => d.cert_expiration && d.cert_expiration >= TODAY && d.cert_expiration <= IN_90)
+    return expiring.sort((a, b) => a.cert_expiration.localeCompare(b.cert_expiration))[0]?.cert_expiration ?? null
+  }
+  return null
 }
 
 function formatDate(str) {
@@ -43,70 +57,105 @@ function StatCard({ label, value, sub, valueColor, onClick, active }) {
   )
 }
 
-const DRILL_CONFIG = {
-  expiring: {
-    label: 'Expiring Within 90 Days',
-    rowColor: 'text-yellow-700',
-    emptyText: 'No certs expiring within 90 days.',
-  },
-  expired: {
-    label: 'Expired Certifications',
-    rowColor: 'text-red-700',
-    emptyText: 'No expired certifications.',
-  },
-  missing: {
-    label: 'SKUs with No Cert on File',
-    rowColor: 'text-gray-500',
-    emptyText: 'All SKUs have a cert number on file.',
-  },
+function DrillTable({ rows, type }) {
+  return (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="border-b border-gray-100">
+          <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs">SKU</th>
+          <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs">Description</th>
+          <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs">Manufacturer</th>
+          <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs">Docs</th>
+          <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs">
+            {type === 'missing' ? 'Issue' : 'Expiration'}
+          </th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-50">
+        {rows.map(p => (
+          <tr key={p.id} className="hover:bg-gray-50">
+            <td className="px-5 py-2.5 font-mono text-xs text-gray-900">{p.sku}</td>
+            <td className="px-5 py-2.5 text-gray-700 max-w-[200px] truncate">{p.description ?? '—'}</td>
+            <td className="px-5 py-2.5 text-gray-700">{p.manufacturer ?? '—'}</td>
+            <td className="px-5 py-2.5 text-gray-500 text-xs">{p.cert_documents?.length ?? 0}</td>
+            <td className="px-5 py-2.5 font-medium">
+              {type === 'missing'
+                ? <span className="text-gray-500">No cert on file</span>
+                : type === 'expired'
+                  ? <span className="text-red-600">{formatDate(primaryExpiration(p, 'expired'))}</span>
+                  : <span className="text-yellow-700">{formatDate(primaryExpiration(p, 'expiring'))}</span>
+              }
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
 }
 
 function DrillDown({ products, type, onClose }) {
   const navigate = useNavigate()
-  const cfg = DRILL_CONFIG[type]
-  const rows = products.filter(p => certStatus(p) === type)
-    .sort((a, b) => (a.cert_expiration ?? '').localeCompare(b.cert_expiration ?? '') || a.sku.localeCompare(b.sku))
+
+  const expiredRows  = products.filter(p => certStatus(p) === 'expired')
+    .sort((a, b) => a.sku.localeCompare(b.sku))
+  const missingRows  = products.filter(p => certStatus(p) === 'missing')
+    .sort((a, b) => a.sku.localeCompare(b.sku))
+  const expiringRows = products.filter(p => certStatus(p) === 'expiring')
+    .sort((a, b) => {
+      const ae = primaryExpiration(a, 'expiring') ?? ''
+      const be = primaryExpiration(b, 'expiring') ?? ''
+      return ae.localeCompare(be) || a.sku.localeCompare(b.sku)
+    })
+
+  const title = type === 'not-sellable' ? 'Not Sellable — Detail'
+    : type === 'expiring' ? 'Expiring Within 90 Days'
+    : '—'
 
   return (
     <div className="mt-4 bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50">
-        <p className="text-sm font-semibold text-gray-700">{cfg.label}</p>
+        <p className="text-sm font-semibold text-gray-700">{title}</p>
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/products')}
-            className="text-xs text-blue-600 hover:underline"
-          >
-            Edit in Products →
+          <button onClick={() => navigate('/products')} className="text-xs text-blue-600 hover:underline">
+            Fix in Products →
           </button>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
         </div>
       </div>
 
-      {rows.length === 0 ? (
-        <p className="px-5 py-6 text-sm text-gray-400 text-center">{cfg.emptyText}</p>
-      ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100">
-              <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs">SKU</th>
-              <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs">Description</th>
-              <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs">Manufacturer</th>
-              <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs">Cert Number</th>
-              <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs">Expiration</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {rows.map(p => (
-              <tr key={p.id} className="hover:bg-gray-50">
-                <td className="px-5 py-2.5 font-mono text-xs text-gray-900">{p.sku}</td>
-                <td className="px-5 py-2.5 text-gray-700 max-w-[200px] truncate">{p.description ?? '—'}</td>
-                <td className="px-5 py-2.5 text-gray-700">{p.manufacturer ?? '—'}</td>
-                <td className="px-5 py-2.5 font-mono text-xs text-gray-700">{p.cert_number ?? '—'}</td>
-                <td className={`px-5 py-2.5 font-medium ${cfg.rowColor}`}>{formatDate(p.cert_expiration)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {type === 'expiring' && (
+        expiringRows.length === 0
+          ? <p className="px-5 py-6 text-sm text-gray-400 text-center">No certs expiring within 90 days.</p>
+          : <DrillTable rows={expiringRows} type="expiring" />
+      )}
+
+      {type === 'not-sellable' && (
+        expiredRows.length === 0 && missingRows.length === 0 ? (
+          <p className="px-5 py-6 text-sm text-gray-400 text-center">All SKUs have valid compliance documentation.</p>
+        ) : (
+          <>
+            {expiredRows.length > 0 && (
+              <>
+                <div className="px-5 py-2 bg-red-50 border-b border-red-100">
+                  <p className="text-xs font-semibold text-red-700 uppercase tracking-wide">
+                    Expired Certifications — {expiredRows.length} SKU{expiredRows.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+                <DrillTable rows={expiredRows} type="expired" />
+              </>
+            )}
+            {missingRows.length > 0 && (
+              <>
+                <div className={`px-5 py-2 bg-gray-50 border-b border-gray-100 ${expiredRows.length > 0 ? 'border-t border-gray-200' : ''}`}>
+                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                    No Cert on File — {missingRows.length} SKU{missingRows.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+                <DrillTable rows={missingRows} type="missing" />
+              </>
+            )}
+          </>
+        )
       )}
     </div>
   )
@@ -115,11 +164,11 @@ function DrillDown({ products, type, onClose }) {
 export default function Dashboard() {
   const navigate = useNavigate()
   const [products, setProducts] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading]   = useState(true)
   const [drillDown, setDrillDown] = useState(null)
 
   useEffect(() => {
-    supabase.from('products').select('*').then(({ data, error }) => {
+    supabase.from('products').select('*, cert_documents(*)').then(({ data, error }) => {
       if (!error) setProducts(data ?? [])
       setLoading(false)
     })
@@ -130,19 +179,14 @@ export default function Dashboard() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-48 text-gray-400 text-sm">
-        Loading…
-      </div>
-    )
+    return <div className="flex items-center justify-center h-48 text-gray-400 text-sm">Loading…</div>
   }
 
-  const total = products.length
-  const certified = products.filter(p => p.cert_number && p.cert_expiration && p.cert_expiration >= TODAY).length
+  const total        = products.length
+  const sellable     = products.filter(p => { const s = certStatus(p); return s === 'valid' || s === 'expiring' }).length
   const expiringSoon = products.filter(p => certStatus(p) === 'expiring').length
-  const expired = products.filter(p => certStatus(p) === 'expired').length
-  const noCert = products.filter(p => certStatus(p) === 'missing').length
-  const coveragePct = total > 0 ? Math.round((certified / total) * 100) : 0
+  const notSellable  = products.filter(p => { const s = certStatus(p); return s === 'expired' || s === 'missing' }).length
+  const sellablePct  = total > 0 ? Math.round((sellable / total) * 100) : 0
 
   const isEmpty = total === 0
 
@@ -151,7 +195,7 @@ export default function Dashboard() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-500 text-sm mt-1">
-          NSF/ANSI 372 certification coverage across your catalog
+          Lead-free compliance status across your catalog
         </p>
       </div>
 
@@ -178,37 +222,26 @@ export default function Dashboard() {
               valueColor="text-gray-900"
             />
             <StatCard
-              label="Cert Coverage"
-              value={`${coveragePct}%`}
-              sub={`${certified} of ${total} SKUs certified`}
+              label="Sellable"
+              value={sellable}
+              sub={`${sellablePct}% of catalog — valid cert on file`}
               valueColor="text-green-600"
             />
             <StatCard
               label="Expiring Soon"
               value={expiringSoon}
-              sub="certs expiring within 90 days"
+              sub="still sellable — cert expires within 90 days"
               valueColor="text-yellow-600"
               onClick={expiringSoon > 0 ? () => toggleDrill('expiring') : null}
               active={drillDown === 'expiring'}
             />
             <StatCard
-              label="Expired"
-              value={expired}
-              sub="certifications past expiration"
+              label="Not Sellable"
+              value={notSellable}
+              sub="expired cert or no cert on file"
               valueColor="text-red-600"
-              onClick={expired > 0 ? () => toggleDrill('expired') : null}
-              active={drillDown === 'expired'}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-            <StatCard
-              label="No Cert on File"
-              value={noCert}
-              sub="SKUs missing certification"
-              valueColor="text-gray-700"
-              onClick={noCert > 0 ? () => toggleDrill('missing') : null}
-              active={drillDown === 'missing'}
+              onClick={notSellable > 0 ? () => toggleDrill('not-sellable') : null}
+              active={drillDown === 'not-sellable'}
             />
           </div>
 
