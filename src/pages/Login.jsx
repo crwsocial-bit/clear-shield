@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 
-export default function Login() {
+export default function Login({ initialView = 'signin' }) {
   const navigate = useNavigate()
-  const [view, setView] = useState('signin') // 'signin' | 'signup' | 'forgot'
+  const [view, setView] = useState(initialView) // 'signin' | 'signup' | 'forgot'
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -16,8 +16,8 @@ export default function Login() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-          {view === 'signin'  && <SignIn  onSwitch={setView} onDone={() => navigate('/')} />}
-          {view === 'signup'  && <SignUp  onSwitch={setView} onDone={() => navigate('/')} />}
+          {view === 'signin'  && <SignIn  onSwitch={setView} onDone={() => navigate('/dashboard')} />}
+          {view === 'signup'  && <SignUp  onSwitch={setView} onDone={() => navigate('/dashboard')} />}
           {view === 'forgot'  && <Forgot  onSwitch={setView} />}
         </div>
 

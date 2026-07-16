@@ -205,12 +205,20 @@ export default function Dashboard() {
           <p className="text-gray-500 text-sm mt-1">
             Import your product catalog to start tracking certifications.
           </p>
-          <button
-            onClick={() => navigate('/products')}
-            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-          >
-            Go to Products
-          </button>
+          <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              onClick={() => navigate('/products')}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              Go to Products
+            </button>
+            <button
+              onClick={() => navigate('/getting-started')}
+              className="border border-gray-300 hover:border-gray-400 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              Getting Started Guide &rarr;
+            </button>
+          </div>
         </div>
       ) : (
         <>
