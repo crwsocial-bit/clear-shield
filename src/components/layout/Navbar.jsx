@@ -156,12 +156,12 @@ export default function Navbar() {
     : user?.email?.[0]?.toUpperCase() ?? '?'
 
   const navLink = ({ isActive }) =>
-    `px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+    `px-2.5 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
       isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
     }`
 
   return (
-    <nav className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-4">
+    <nav className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-3">
       {/* Logo */}
       <div className="shrink-0 flex items-center gap-2">
         <Shield className="w-7 h-7 text-slate-700 opacity-75" />
@@ -169,7 +169,7 @@ export default function Navbar() {
       </div>
 
       {/* Nav links */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5 shrink-0">
         <NavLink to="/dashboard" end className={navLink}>Dashboard</NavLink>
         <NavLink to="/products" className={navLink}>Products</NavLink>
         <NavLink to="/companies" className={navLink}>Companies</NavLink>
