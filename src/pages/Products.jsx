@@ -1051,10 +1051,15 @@ export default function Products() {
                       </td>
                       <td className="px-4 py-3 text-gray-700">{p.po_number ?? '—'}</td>
                       <td className="px-4 py-3">
-                        <div className="flex items-start gap-2">
+                        <div className="flex items-start flex-wrap gap-x-2 gap-y-1">
                           <SellableBadge product={p} />
+                          {p.needs_review && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 whitespace-nowrap">
+                              ⚠ Needs Review
+                            </span>
+                          )}
                           {docCount > 0 && (
-                            <span className="text-xs text-gray-400 mt-1">{docCount} doc{docCount !== 1 ? 's' : ''}</span>
+                            <span className="text-xs text-gray-400 self-center">{docCount} doc{docCount !== 1 ? 's' : ''}</span>
                           )}
                         </div>
                       </td>

@@ -44,6 +44,7 @@ export default function SmartImportModal({ onClose, onSaved }) {
   const [dragging, setDragging]       = useState(false)
   const [stage, setStage]             = useState('upload') // 'upload' | 'processing' | 'review'
   const [form, setForm]               = useState(EMPTY_REVIEW)
+  const [warnings, setWarnings]       = useState([])
   const [saving, setSaving]           = useState(false)
   const [error, setError]             = useState('')
   const [processError, setProcessError] = useState('')
@@ -99,6 +100,7 @@ export default function SmartImportModal({ onClose, onSaved }) {
       }
 
       const d = result.data ?? {}
+      setWarnings(Array.isArray(d.warnings) ? d.warnings : [])
       setForm({
         sku: '',
         product_name:         d.product_name         ?? '',
@@ -138,6 +140,7 @@ export default function SmartImportModal({ onClose, onSaved }) {
           manufacturer: form.manufacturer.trim() || null,
           notes:        form.notes.trim()        || null,
           user_id:      user.id,
+          needs_review: warnings.length > 0,
         })
         .select()
         .single()
@@ -263,6 +266,22 @@ export default function SmartImportModal({ onClose, onSaved }) {
                     AI extracted the fields below — review and correct before saving.
                   </p>
                 </div>
+
+                {warnings.length > 0 && (
+                  <div className="mb-4 bg-yellow-50 border border-yellow-300 rounded-lg px-3 py-3">
+                    <p className="text-xs font-semibold text-yellow-800 mb-1.5">
+                      AI flagged the following issues — review before saving:
+                    </p>
+                    <ul className="space-y-1">
+                      {warnings.map((w, i) => (
+                        <li key={i} className="flex items-start gap-1.5 text-xs text-yellow-700">
+                          <span className="shrink-0 mt-px">⚠</span>
+                          <span>{w}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 {error && (
                   <div className="mb-4 bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg">
@@ -414,7 +433,7 @@ export default function SmartImportModal({ onClose, onSaved }) {
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => { setStage('upload'); setError('') }}
+                  onClick={() => { setStage('upload'); setError(''); setWarnings([]) }}
                   className="flex-1 border border-gray-300 text-gray-700 text-sm font-medium py-2 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Back
