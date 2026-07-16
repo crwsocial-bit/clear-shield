@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-// ─── Animated background for hero ────────────────────────────────────────────
+// ─── Animated background orbs ─────────────────────────────────────────────────
 
 function HeroOrbs() {
   return (
@@ -54,9 +54,9 @@ function LandingNavbar() {
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <div>
+        <div className="flex flex-col leading-none">
           <span className="text-white text-xl font-bold tracking-tight">ClearShield</span>
-          <span className="hidden sm:inline ml-3 text-slate-500 text-xs font-medium tracking-wide">
+          <span className="text-slate-500 text-[10px] font-medium tracking-wide mt-0.5">
             Compliance made clear.
           </span>
         </div>
@@ -86,7 +86,6 @@ function Hero() {
     <section className="relative min-h-screen bg-slate-900 flex items-center pt-16">
       <HeroOrbs />
 
-      {/* Fine grid overlay */}
       <div
         className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{
@@ -99,36 +98,30 @@ function Hero() {
 
       <div className="relative max-w-7xl mx-auto px-6 py-32 md:py-40">
         <div className="max-w-4xl">
-          {/* Eyebrow */}
-          <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-1.5 mb-8">
+          <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-1.5 mb-10">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-emerald-400 text-xs font-semibold tracking-wide uppercase">
               NSF/ANSI 372 · EPA Lead-Free Rule · SDWA 1417
             </span>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-[4.25rem] font-extrabold text-white leading-[1.08] tracking-tight mb-8">
-            One Non-Compliant SKU Can
-            <br className="hidden md:block" />
-            <span className="text-emerald-400"> Shut Your Business Down.</span>
-            <br className="hidden md:block" />
-            ClearShield Makes Sure
-            <br className="hidden md:block" />
-            That Never Happens.
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-[4.25rem] font-extrabold text-white leading-[1.08] tracking-tight mb-7">
+            Know Which SKUs Are Sellable.
+            <br />
+            <span className="text-emerald-400">Prove It in Seconds.</span>
           </h1>
 
-          <p className="text-slate-300 text-lg md:text-xl leading-relaxed max-w-2xl mb-10">
-            The only compliance management platform built exclusively for lead-free brass parts
-            distributors. Know exactly which SKUs are sellable, which certs are expiring, and prove
-            it in seconds — not hours.
+          <p className="text-slate-300 text-xl leading-relaxed max-w-2xl mb-10">
+            ClearShield gives lead-free brass distributors real-time compliance visibility across
+            every product they carry.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4">
             <Link
               to="/signup"
-              className="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-base font-semibold px-8 py-3.5 rounded-xl transition-all shadow-xl shadow-emerald-900/40 hover:shadow-emerald-900/60 hover:-translate-y-0.5"
+              className="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-base font-semibold px-8 py-3.5 rounded-xl transition-all shadow-xl shadow-emerald-900/40 hover:-translate-y-0.5"
             >
-              Start Free &rarr;
+              Get Started Free &rarr;
             </Link>
             <a
               href="#features"
@@ -158,16 +151,16 @@ function Hero() {
 
 const painCards = [
   {
-    title: 'Expired certs hiding in your catalog',
-    body: 'Your team added a cert in 2022 and moved on. It expired in 2023. You have no idea. That SKU is still listed as sellable — until an auditor or a customer flags it. By then, the damage is done.',
+    title: 'Expired Certs Hide in Plain Sight',
+    body: 'A cert gets uploaded and forgotten. It expires quietly while the SKU stays listed as sellable.',
   },
   {
-    title: 'Audit day is a fire drill',
-    body: "An inspector asks for compliance documentation on 40 SKUs. Someone runs to find the filing cabinet. Someone else digs through email threads. Hours disappear. Nothing looks controlled — because it isn't.",
+    title: 'Every Audit Becomes a Fire Drill',
+    body: 'Inspectors ask for documentation on dozens of SKUs. Finding it takes hours — not seconds.',
   },
   {
-    title: 'Self-certifications are a liability trap',
-    body: "A manufacturer sends you a letter saying their product is lead-free. You file it and treat it as a cert. Without clear categorization, self-certifications and third-party certs look identical — but they carry very different legal weight.",
+    title: 'Self-Certs Look Like Real Certs',
+    body: 'Without clear categorization, a manufacturer letter and an NSF certificate look identical in your records. They carry very different legal weight.',
   },
 ]
 
@@ -177,12 +170,12 @@ function PainSection() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="max-w-2xl mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-slate-900 leading-tight mb-5">
-            The Problem With How Things Are Done Today.
+            The Problem With Today's Process.
           </h2>
           <p className="text-slate-600 text-lg leading-relaxed">
-            Most brass distributors manage lead-free compliance with a mix of spreadsheets,
-            shared drives, and tribal knowledge. It's a ticking liability — and every passing
-            quarter that catalog is getting harder to audit.
+            Most distributors track lead-free compliance in spreadsheets and shared drives.
+            Spreadsheets don't alert you when certs expire or flag which SKUs aren't sellable.
+            Every audit turns into a search-and-rescue mission.
           </p>
         </div>
 
@@ -229,11 +222,10 @@ function SolutionSection() {
             ClearShield Changes Everything.
           </h2>
           <p className="text-slate-600 text-lg leading-relaxed">
-            ClearShield is not a generic document manager. It's a purpose-built compliance layer
-            for lead-free brass parts — with a data model, workflow, and status logic designed
-            specifically for SDWA 1417, NSF/ANSI 372, and the issuing bodies that certify under
-            those standards. Every feature exists to answer one of two questions: is this SKU
-            compliant right now, and can you prove it on demand?
+            ClearShield is purpose-built for lead-free brass parts compliance — not a generic
+            document manager. It tracks cert status per SKU, across every issuing body, with
+            expiration logic built in. Every feature answers one of two questions: is this SKU
+            sellable right now, and can you prove it?
           </p>
         </div>
 
@@ -266,32 +258,32 @@ const features = [
   {
     icon: '🟢',
     title: 'Red/Green Sellable Status',
-    body: 'Every SKU gets an instant visual signal. Green means a valid cert is on file. Red means expired or missing. No guessing, no interpretation — one glance tells the whole story.',
+    body: 'Every SKU shows green (valid cert on file) or red (expired or missing). One glance tells the whole story.',
   },
   {
     icon: '📄',
-    title: 'Multi-Document Cert Tracking Per SKU',
-    body: 'One SKU can carry multiple compliance documents from different issuing bodies — third-party certs, manufacturer self-certifications, and mill test reports, each independently tracked.',
+    title: 'Multi-Document Cert Tracking',
+    body: 'One SKU can carry certs from multiple issuing bodies — third-party certs, self-certifications, and mill test reports, each tracked independently.',
   },
   {
     icon: '⏰',
-    title: 'Expiration Alerts Before It\'s Too Late',
-    body: '30, 60, and 90-day warnings surface expiring certs automatically. Know what needs renewal before gaps form in your catalog — without anyone having to check manually.',
+    title: 'Expiration Alerts',
+    body: '30, 60, and 90-day warnings surface expiring certs automatically. No manual checking required.',
   },
   {
     icon: '📋',
-    title: 'One-Click Audit Exports',
-    body: 'When an inspector walks in, generate a complete, timestamped compliance packet in seconds. Every cert, every issuing body, every expiration date — clean and ready to hand over.',
+    title: 'One-Click Audit Export',
+    body: 'Generate a complete, timestamped compliance packet in seconds. Every cert, issuing body, and expiration date — ready to hand over.',
   },
   {
     icon: '🔍',
     title: 'Global Search + Audit Lists',
-    body: 'Search across SKUs, customers, and purchase orders. Add any selection to a named audit list, save it, and re-export whenever needed — the exact proof package each auditor requires.',
+    body: 'Search across SKUs, customers, and purchase orders. Build named audit lists and export them on demand.',
   },
   {
     icon: '📥',
     title: 'CSV Bulk Import',
-    body: 'Get your entire existing product catalog into ClearShield in minutes. Map your columns, review the preview, and import — no manual data entry, no spreadsheet gymnastics.',
+    body: 'Upload your existing product catalog as a CSV. ClearShield maps your columns and imports everything in minutes.',
   },
 ]
 
@@ -301,11 +293,11 @@ function FeaturesSection() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="max-w-2xl mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-            Everything You Need. Nothing You Don't.
+            Built for One Purpose.
           </h2>
           <p className="text-slate-600 text-lg">
-            Built narrow and deep for one industry, one regulation, one job — not a platform that
-            tries to do everything for everyone.
+            Every feature in ClearShield exists to answer one question: is this SKU compliant,
+            and can you prove it?
           </p>
         </div>
 
@@ -334,22 +326,22 @@ const steps = [
   {
     n: '01',
     title: 'Import Your Catalog',
-    body: 'Upload a CSV with your existing SKUs. ClearShield maps your columns and loads your entire product list in minutes — no manual entry required.',
+    body: 'Upload a CSV and your entire product list is in ClearShield within minutes.',
   },
   {
     n: '02',
-    title: 'Attach Your Compliance Docs',
-    body: 'For each SKU, attach the relevant cert documents — third-party certificates, self-certifications, or mill test reports. Set the issuing body and expiration date.',
+    title: 'Attach Your Certs',
+    body: 'For each SKU, attach the cert document, set the issuing body, and enter the expiration date.',
   },
   {
     n: '03',
     title: 'Watch Your Dashboard',
-    body: 'Your compliance dashboard shows the full picture instantly: sellable, expiring soon, and not sellable — with a drill-down into every problem SKU.',
+    body: 'Sellable, expiring, and not-sellable counts update in real time — with drill-down into every problem SKU.',
   },
   {
     n: '04',
     title: 'Stay Ahead of Audits',
-    body: 'Get expiration alerts before gaps form. Build audit lists on demand. Export a complete compliance packet whenever a customer or inspector asks for proof.',
+    body: 'Get expiration alerts early, build audit lists on demand, and export proof in seconds.',
   },
 ]
 
@@ -359,33 +351,32 @@ function HowItWorksSection() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="max-w-2xl mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-            Up and Running in Minutes.
+            Up and Running Fast.
           </h2>
           <p className="text-slate-600 text-lg">
-            No lengthy implementation. No consultant required. Most customers have their first
-            catalog imported and certs attached within a single afternoon.
+            Most customers have their catalog imported and first certs attached in a single
+            afternoon. No implementation. No consultant.
           </p>
         </div>
 
         <div className="relative">
-          {/* Connecting line on desktop */}
           <div
             className="hidden md:block absolute top-8 left-0 right-0 h-px bg-slate-200 mx-16"
             aria-hidden="true"
           />
 
           <div className="grid md:grid-cols-4 gap-8 md:gap-6 relative">
-            {steps.map((step, i) => (
+            {steps.map((step) => (
               <div key={step.n} className="relative">
                 <div className="flex md:flex-col items-start gap-4 md:gap-0">
-                  <div className="relative shrink-0">
+                  <div className="shrink-0">
                     <div className="w-16 h-16 rounded-2xl bg-slate-900 flex items-center justify-center shadow-lg md:mb-6">
                       <span className="text-emerald-400 text-sm font-bold tracking-wide">
                         {step.n}
                       </span>
                     </div>
                   </div>
-                  <div className="md:pt-0 pt-1">
+                  <div className="pt-1 md:pt-0">
                     <h3 className="text-slate-900 font-semibold text-base mb-2">{step.title}</h3>
                     <p className="text-slate-500 text-sm leading-relaxed">{step.body}</p>
                   </div>
@@ -415,13 +406,14 @@ function WhoForSection() {
     <section className="py-28 bg-slate-900">
       <div className="max-w-7xl mx-auto px-6">
         <div className="max-w-3xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">Built For You.</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+            Built for Brass Distributors.
+          </h2>
           <p className="text-slate-300 text-lg leading-relaxed mb-12">
-            ClearShield is purpose-built for small-to-mid-sized brass parts distributors navigating
-            SDWA Section 1417 and NSF/ANSI 372. If you're sourcing lead-free brass fittings,
-            valves, or fixtures and reselling them — to plumbing contractors, utilities, or OEMs —
-            ClearShield is your compliance infrastructure. Not an add-on to a bigger platform. Not
-            a generic doc manager. The thing built for exactly this.
+            ClearShield is built for small-to-mid-sized brass parts distributors managing
+            SDWA 1417 and NSF/ANSI 372 compliance. If you source lead-free brass fittings,
+            valves, or fixtures and resell them — this is your compliance layer. Not an add-on
+            to a bigger platform. The thing built for exactly this job.
           </p>
 
           <div>
@@ -504,7 +496,7 @@ function PricingSection() {
             Simple, Transparent Pricing.
           </h2>
           <p className="text-slate-600 text-lg">
-            No setup fees. No annual contracts required. Cancel anytime.
+            No setup fees. No annual contracts. Cancel anytime.
           </p>
         </div>
 
@@ -608,12 +600,11 @@ function ClosingCTA() {
       />
       <div className="relative max-w-7xl mx-auto px-6 text-center">
         <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-6 max-w-3xl mx-auto">
-          Your Competitors Are Already One Audit Away From a Problem.
-          <span className="text-emerald-400"> Make Sure You Aren't.</span>
+          Never Get Caught <span className="text-emerald-400">Off Guard.</span>
         </h2>
-        <p className="text-slate-400 text-lg mb-10 max-w-xl mx-auto">
-          Get your catalog compliant-tracked in an afternoon. No contract. No credit card required
-          to start.
+        <p className="text-slate-400 text-lg mb-10 max-w-lg mx-auto">
+          Get your catalog tracked and your certs organized before the next audit finds a gap. No
+          contract. No credit card required to start.
         </p>
         <Link
           to="/signup"
