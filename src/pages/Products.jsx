@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Sparkles } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { parseCSV } from '../utils/csvParser'
 import { TypeBadge } from './Companies'
 import { useAuditList } from '../lib/auditListContext'
+import SmartImportModal from '../components/SmartImportModal'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -767,13 +769,14 @@ export default function Products() {
   const [searchParams] = useSearchParams()
   const { toggle, isSelected } = useAuditList()
 
-  const [products, setProducts]         = useState([])
-  const [companies, setCompanies]       = useState([])
-  const [loading, setLoading]           = useState(true)
-  const [importing, setImporting]       = useState(false)
-  const [importResult, setImportResult] = useState(null)
-  const [error, setError]               = useState('')
-  const [panel, setPanel]               = useState(null)
+  const [products, setProducts]             = useState([])
+  const [companies, setCompanies]           = useState([])
+  const [loading, setLoading]               = useState(true)
+  const [importing, setImporting]           = useState(false)
+  const [importResult, setImportResult]     = useState(null)
+  const [showSmartImport, setShowSmartImport] = useState(false)
+  const [error, setError]                   = useState('')
+  const [panel, setPanel]                   = useState(null)
   const VALID_STATUSES = ['valid', 'expiring', 'expired', 'missing']
   const [search, setSearch]             = useState(searchParams.get('search') ?? '')
   const [statusFilter, setStatusFilter] = useState(() => {
@@ -825,6 +828,12 @@ export default function Products() {
     setProducts(ps => ps.map(p =>
       p.id === productId ? { ...p, cert_documents: updatedDocs } : p
     ))
+  }
+
+  async function handleSmartImportSaved() {
+    setShowSmartImport(false)
+    setImportResult({ inserted: 1, skipped: [], unmappedHeaders: [] })
+    await fetchProducts()
   }
 
   async function handleFileChange(e) {
@@ -919,6 +928,13 @@ export default function Products() {
             className="border border-gray-300 hover:border-gray-400 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
           >
             + Add Product
+          </button>
+          <button
+            onClick={() => setShowSmartImport(true)}
+            className="border border-blue-200 hover:border-blue-400 text-blue-700 hover:text-blue-800 text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5"
+          >
+            <Sparkles className="w-4 h-4" />
+            Smart Import
           </button>
           <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
           <button
@@ -1068,6 +1084,14 @@ export default function Products() {
           onSaved={handleSaved}
           onDeleted={handleDeleted}
           onDocsChanged={handleDocsChanged}
+        />
+      )}
+
+      {/* Smart Import modal */}
+      {showSmartImport && (
+        <SmartImportModal
+          onClose={() => setShowSmartImport(false)}
+          onSaved={handleSmartImportSaved}
         />
       )}
     </div>
