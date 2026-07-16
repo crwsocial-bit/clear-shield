@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, NavLink } from 'react-router-dom'
+import { Shield } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuditList } from '../../lib/auditListContext'
 
@@ -162,7 +163,8 @@ export default function Navbar() {
   return (
     <nav className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-4">
       {/* Logo */}
-      <div className="shrink-0">
+      <div className="shrink-0 flex items-center gap-2">
+        <Shield className="w-7 h-7 text-slate-700 opacity-75" />
         <span className="text-lg font-bold text-gray-900">ClearShield</span>
       </div>
 
