@@ -164,7 +164,6 @@ export default function Navbar() {
       {/* Logo */}
       <div className="shrink-0">
         <span className="text-lg font-bold text-gray-900">ClearShield</span>
-        <p className="text-xs text-gray-400 leading-none mt-0.5">Compliance made clear.</p>
       </div>
 
       {/* Nav links */}

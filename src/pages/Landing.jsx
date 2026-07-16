@@ -106,9 +106,9 @@ function Hero() {
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-[4.25rem] font-extrabold text-white leading-[1.08] tracking-tight mb-7">
-            Know Which SKUs Are Sellable.
+            Stay Organized. Stay Compliant.
             <br />
-            <span className="text-emerald-400">Prove It in Seconds.</span>
+            <span className="text-emerald-400">Sell Confidently.</span>
           </h1>
 
           <p className="text-slate-300 text-xl leading-relaxed max-w-2xl mb-10">
