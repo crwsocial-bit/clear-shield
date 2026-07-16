@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Shield } from 'lucide-react'
 
 // ─── Animated background orbs ─────────────────────────────────────────────────
 
@@ -54,11 +55,9 @@ function LandingNavbar() {
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <div className="flex flex-col leading-none">
+        <div className="flex items-center gap-2">
+          <Shield className="w-7 h-7 text-white opacity-75" />
           <span className="text-white text-xl font-bold tracking-tight">ClearShield</span>
-          <span className="text-slate-500 text-[10px] font-medium tracking-wide mt-0.5">
-            Compliance made clear.
-          </span>
         </div>
         <div className="flex items-center gap-3">
           <Link
