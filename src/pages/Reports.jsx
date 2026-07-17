@@ -31,7 +31,7 @@ function primaryDoc(p) {
 }
 
 const STATUS_LABEL = {
-  valid:'Valid', expiring:'Expiring Soon', expired:'Expired', missing:'No Cert on File',
+  valid:'Compliant', expiring:'Expiring Soon', expired:'Expired', missing:'No Cert on File',
 }
 const STATUS_PRIORITY = { expired:0, expiring:1, missing:2, valid:3 }
 const STATUS_COLOR = {
@@ -286,7 +286,7 @@ export default function Reports() {
                 <select value={filters.status} onChange={e => updateFilter('status', e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="all">All statuses</option>
-                  <option value="valid">Valid</option>
+                  <option value="valid">Compliant</option>
                   <option value="expiring">Expiring Soon</option>
                   <option value="expired">Expired</option>
                   <option value="missing">No Cert</option>

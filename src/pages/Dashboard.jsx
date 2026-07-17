@@ -107,7 +107,7 @@ function DrillDown({ products, type, onClose }) {
       return ae.localeCompare(be) || a.sku.localeCompare(b.sku)
     })
 
-  const title = type === 'not-sellable' ? 'Not Sellable — Detail'
+  const title = type === 'not-sellable' ? 'Not Compliant — Detail'
     : type === 'expiring' ? 'Expiring Within 90 Days'
     : '—'
 
@@ -230,7 +230,7 @@ export default function Dashboard() {
               valueColor="text-gray-900"
             />
             <StatCard
-              label="Sellable"
+              label="Compliant"
               value={sellable}
               sub={`${sellablePct}% of catalog — valid cert on file`}
               valueColor="text-green-600"
@@ -244,7 +244,7 @@ export default function Dashboard() {
               active={drillDown === 'expiring'}
             />
             <StatCard
-              label="Not Sellable"
+              label="Not Compliant"
               value={notSellable}
               sub="expired cert or no cert on file"
               valueColor="text-red-600"

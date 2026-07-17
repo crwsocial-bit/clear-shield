@@ -151,7 +151,7 @@ export default function GettingStarted() {
             <>Navigate to <UILabel>Products</UILabel>.</>,
             <>Click <UILabel>Add Product</UILabel>.</>,
             <>Fill in the SKU (required) and any other details you have: description, manufacturer, part number, product category, and cert scope.</>,
-            <>Click <UILabel>Save</UILabel>. The product is now in your catalog with a <span className="font-semibold text-red-600">Not Sellable</span> status until you attach a cert document.</>,
+            <>Click <UILabel>Save</UILabel>. The product is now in your catalog with a <span className="font-semibold text-red-600">Not Compliant</span> status until you attach a cert document.</>,
           ].map((step, i) => (
             <li key={i} className="flex items-start gap-3 text-sm text-slate-600">
               <span className="shrink-0 w-5 h-5 rounded-full bg-slate-200 text-slate-600 text-xs font-bold flex items-center justify-center mt-0.5">
@@ -189,7 +189,7 @@ export default function GettingStarted() {
             </>,
             <>If the document type is a third-party cert, select the <strong>Issuing Body</strong> (NSF International, IAPMO, CSA Group, UL, or Bureau Veritas).</>,
             <>Set the <strong>Expiration Date</strong>. Most NSF/ANSI 372 certs renew annually — use the cert's listed expiration, not the issue date.</>,
-            <>Click <UILabel>Save</UILabel>. The SKU's status will immediately update to <span className="font-semibold text-emerald-600">Sellable</span> if the cert is not expired.</>,
+            <>Click <UILabel>Save</UILabel>. The SKU's status will immediately update to <span className="font-semibold text-emerald-600">Compliant</span> if the cert is not expired.</>,
           ].map((step, i) => (
             <li key={i} className="flex items-start gap-3 text-sm text-slate-600">
               <span className="shrink-0 w-5 h-5 rounded-full bg-slate-200 text-slate-600 text-xs font-bold flex items-center justify-center mt-0.5">
@@ -239,7 +239,7 @@ export default function GettingStarted() {
           <div className="bg-white border border-slate-200 rounded-xl p-5">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-3 h-3 rounded-full bg-emerald-500" />
-              <span className="font-semibold text-slate-900 text-sm">Sellable</span>
+              <span className="font-semibold text-slate-900 text-sm">Compliant</span>
             </div>
             <p className="text-slate-500 text-sm leading-relaxed">
               SKUs with at least one valid, non-expired qualifying compliance document. These are
@@ -262,7 +262,7 @@ export default function GettingStarted() {
           <div className="bg-white border border-slate-200 rounded-xl p-5">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-3 h-3 rounded-full bg-red-500" />
-              <span className="font-semibold text-slate-900 text-sm">Not Sellable</span>
+              <span className="font-semibold text-slate-900 text-sm">Not Compliant</span>
             </div>
             <p className="text-slate-500 text-sm leading-relaxed">
               SKUs with an expired cert or no cert on file at all. Click this card to drill

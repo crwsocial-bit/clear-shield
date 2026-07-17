@@ -256,7 +256,7 @@ function SolutionSection() {
 const features = [
   {
     icon: '🟢',
-    title: 'Red/Green Sellable Status',
+    title: 'Red/Green Compliant Status',
     body: 'Every SKU shows green (valid cert on file) or red (expired or missing). One glance tells the whole story.',
   },
   {
@@ -335,7 +335,7 @@ const steps = [
   {
     n: '03',
     title: 'Watch Your Dashboard',
-    body: 'Sellable, expiring, and not-sellable counts update in real time — with drill-down into every problem SKU.',
+    body: 'Compliant, expiring, and not-compliant counts update in real time — with drill-down into every problem SKU.',
   },
   {
     n: '04',

@@ -107,7 +107,7 @@ export function SellableBadge({ product }) {
         sellable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'
       }`}>
         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${sellable ? 'bg-green-500' : 'bg-red-500'}`} />
-        {sellable ? 'Sellable' : 'Not Compliant'}
+        {sellable ? 'Compliant' : 'Not Compliant'}
       </span>
       {detail && <span className="text-xs text-gray-400 pl-0.5">{detail}</span>}
     </div>
@@ -963,10 +963,10 @@ export default function Products() {
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All</option>
-            <option value="valid">Sellable — Valid</option>
-            <option value="expiring">Sellable — Expiring Soon</option>
-            <option value="expired">Not Sellable — Expired</option>
-            <option value="missing">Not Sellable — No Cert</option>
+            <option value="valid">Compliant</option>
+            <option value="expiring">Compliant — Expiring Soon</option>
+            <option value="expired">Not Compliant — Expired</option>
+            <option value="missing">Not Compliant — No Cert</option>
           </select>
         </div>
       )}

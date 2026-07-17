@@ -39,7 +39,7 @@ const STATUS_BADGE = {
   missing:  'bg-gray-100 text-gray-500',
 }
 const STATUS_LABEL = {
-  valid:'Valid', expiring:'Expiring Soon', expired:'Expired', missing:'No Cert',
+  valid:'Compliant', expiring:'Expiring Soon', expired:'Expired', missing:'No Cert',
 }
 
 function InfoRow({ label, value, href }) {

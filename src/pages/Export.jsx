@@ -131,7 +131,7 @@ function ProductBlock({ product, isLast }) {
 
         <div style={{ textAlign: 'right', fontFamily: SANS, whiteSpace: 'nowrap' }}>
           <div style={{ fontSize: '13px', fontWeight: '700', color: statusColor }}>
-            {sellable ? '● Sellable' : '● Not Sellable'}
+            {sellable ? '● Compliant' : '● Not Compliant'}
           </div>
           {statusNote && (
             <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>{statusNote}</div>
@@ -257,7 +257,7 @@ export default function Export() {
             ← Close
           </button>
           <span style={{ color: '#d1d5db' }}>|</span>
-          <span>{products.length} SKU{products.length !== 1 ? 's' : ''} · {sellableCount} sellable</span>
+          <span>{products.length} SKU{products.length !== 1 ? 's' : ''} · {sellableCount} compliant</span>
         </div>
         <button
           onClick={() => window.print()}
@@ -299,11 +299,11 @@ export default function Export() {
           <div style={{ display: 'flex', gap: '28px' }}>
             <div>
               <span style={{ fontSize: '26px', fontWeight: '800', color: '#16a34a' }}>{sellableCount}</span>
-              <span style={{ fontFamily: SANS, fontSize: '12px', color: '#6b7280', marginLeft: '6px' }}>Sellable</span>
+              <span style={{ fontFamily: SANS, fontSize: '12px', color: '#6b7280', marginLeft: '6px' }}>Compliant</span>
             </div>
             <div>
               <span style={{ fontSize: '26px', fontWeight: '800', color: notSellableCount > 0 ? '#dc2626' : '#9ca3af' }}>{notSellableCount}</span>
-              <span style={{ fontFamily: SANS, fontSize: '12px', color: '#6b7280', marginLeft: '6px' }}>Not Sellable</span>
+              <span style={{ fontFamily: SANS, fontSize: '12px', color: '#6b7280', marginLeft: '6px' }}>Not Compliant</span>
             </div>
             <div>
               <span style={{ fontSize: '26px', fontWeight: '800', color: '#111827' }}>{products.length}</span>
