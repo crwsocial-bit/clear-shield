@@ -294,6 +294,21 @@ export default function SmartImportModal({ onClose, onSaved }) {
     try {
       const { data: { user } } = await supabase.auth.getUser()
 
+      let sourceFilePath = null
+      if (file) {
+        const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')
+        const uploadPath = `${user.id}/${crypto.randomUUID()}-${safeName}`
+        const { error: uploadErr } = await supabase.storage
+          .from('cert-documents')
+          .upload(uploadPath, file, { contentType: file.type })
+
+        if (uploadErr) {
+          console.error('Cert document file upload failed:', uploadErr)
+        } else {
+          sourceFilePath = uploadPath
+        }
+      }
+
       for (const p of products) {
         const { data: product, error: productErr } = await supabase
           .from('products')
@@ -315,24 +330,28 @@ export default function SmartImportModal({ onClose, onSaved }) {
           return
         }
 
-        const hasCertData = p.cert_number || p.issuing_body || p.issue_date || p.expiration_date
-        if (hasCertData) {
-          let certNotes = p.notes.trim() || null
-          if (p.lead_content_percent.trim()) {
-            const leadNote = `Lead content: ${p.lead_content_percent.trim()}%`
-            certNotes = certNotes ? `${certNotes}\n${leadNote}` : leadNote
-          }
+        let certNotes = p.notes.trim() || null
+        if (p.lead_content_percent.trim()) {
+          const leadNote = `Lead content: ${p.lead_content_percent.trim()}%`
+          certNotes = certNotes ? `${certNotes}\n${leadNote}` : leadNote
+        }
 
-          await supabase.from('cert_documents').insert({
-            product_id:       product.id,
-            user_id:          user.id,
-            document_type:    'third_party_certificate',
-            issuing_body:     p.issuing_body || null,
-            cert_number:      p.cert_number.trim() || null,
-            cert_issued_date: p.issue_date || null,
-            cert_expiration:  p.expiration_date || null,
-            notes:            certNotes,
-          })
+        const { error: certErr } = await supabase.from('cert_documents').insert({
+          product_id:       product.id,
+          user_id:          user.id,
+          document_type:    'third_party_certificate',
+          issuing_body:     p.issuing_body || null,
+          cert_number:      p.cert_number.trim() || null,
+          cert_issued_date: p.issue_date || null,
+          cert_expiration:  p.expiration_date || null,
+          notes:            certNotes,
+          source_file_path: sourceFilePath,
+        })
+
+        if (certErr) {
+          setError(`${p.sku.trim()}: cert document failed to save — ${certErr.message}`)
+          setSaving(false)
+          return
         }
       }
 
