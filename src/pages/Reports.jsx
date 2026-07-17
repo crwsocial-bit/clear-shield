@@ -393,8 +393,9 @@ export default function Reports() {
                   const status   = certStatus(p)
                   const selected = selectedIds.has(p.id)
                   const doc      = primaryDoc(p)
+                  const inExport = exportData.includes(p)
                   return (
-                    <tr key={p.id} className={selected ? 'bg-blue-50' : ''}>
+                    <tr key={p.id} className={`${selected ? 'bg-blue-50' : ''} ${inExport ? '' : 'print:hidden'}`}>
                       <td className="print:hidden py-2.5 pr-3">
                         <input type="checkbox" checked={selected} onChange={() => toggleRow(p.id)}
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
