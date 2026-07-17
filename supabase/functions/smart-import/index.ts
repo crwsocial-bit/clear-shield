@@ -6,32 +6,39 @@ const CORS_HEADERS = {
 
 const TODAY_ISO = new Date().toISOString().split('T')[0]
 
-const EXTRACT_PROMPT = `Today's date is ${TODAY_ISO}. Extract structured data from this compliance certificate document. Return ONLY a valid JSON object with these exact keys (use null for any data field not found):
+const EXTRACT_PROMPT = `Today's date is ${TODAY_ISO}. Extract structured data from this compliance certificate document. The document may cover a single product or multiple products (e.g. a product family certificate listing several part numbers). Return ONLY a valid JSON object with these exact keys:
 
 {
-  "product_name": "product or component name, or null",
-  "part_number": "part number or model number, or null",
-  "manufacturer": "manufacturer or company name, or null",
-  "issuing_body": "certifying organization name such as NSF International, IAPMO, CSA Group, UL, Bureau Veritas, or null",
-  "cert_number": "certificate number or ID, or null",
-  "issue_date": "date issued in YYYY-MM-DD format, or null",
-  "expiration_date": "expiration date in YYYY-MM-DD format, or null",
-  "lead_content_percent": "lead content percentage as a number if stated, or null",
-  "notes": "standards referenced and product scope (e.g. NSF/ANSI 372, lead-free brass fittings 1/2 to 2 inch), or null",
-  "warnings": [
-    "Plain-English warning string for each issue found. Include one for each of the following that applies:",
-    "- expiration_date not found in document",
-    "- cert_number not found in document",
-    "- issuing_body not found or not a recognized accredited body (NSF International, IAPMO, CSA Group, UL, Bureau Veritas)",
-    "- manufacturer not found in document",
-    "- lead_content_percent exceeds 0.25 — may not meet NSF/ANSI 372 threshold",
-    "- certificate appears to be expired (expiration_date is before today)",
-    "- any other significant compliance issue or ambiguity visible in the document",
-    "Empty array [] if no warnings apply. Do NOT include the bullet descriptions above verbatim — write natural warnings based on what you actually find."
+  "products": [
+    {
+      "product_name": "product or component name, or null",
+      "part_number": "part number or model number, or null",
+      "manufacturer": "manufacturer or company name, or null",
+      "issuing_body": "certifying organization name such as NSF International, IAPMO, CSA Group, UL, Bureau Veritas, or null",
+      "cert_number": "certificate number or ID, or null",
+      "issue_date": "date issued in YYYY-MM-DD format, or null",
+      "expiration_date": "expiration date in YYYY-MM-DD format, or null",
+      "lead_content_percent": "lead content percentage as a number if stated, or null",
+      "notes": "standards referenced and product scope (e.g. NSF/ANSI 372, lead-free brass fittings 1/2 to 2 inch), or null",
+      "warnings": [
+        "Plain-English warning string for each issue found for THIS product. Include one for each of the following that applies:",
+        "- expiration_date not found in document",
+        "- cert_number not found in document",
+        "- issuing_body not found or not a recognized accredited body (NSF International, IAPMO, CSA Group, UL, Bureau Veritas)",
+        "- manufacturer not found in document",
+        "- lead_content_percent exceeds 0.25 — may not meet NSF/ANSI 372 threshold",
+        "- certificate appears to be expired (expiration_date is before today)",
+        "- any other significant compliance issue or ambiguity visible in the document for this product",
+        "Empty array [] if no warnings apply. Do NOT include the bullet descriptions above verbatim — write natural warnings based on what you actually find."
+      ]
+    }
+  ],
+  "document_warnings": [
+    "Plain-English warning string for each document-level issue found, e.g. 'document appears to cover 6 products — please verify all were captured' or 'document image quality is poor, some fields may be inaccurate'. Empty array [] if none apply."
   ]
 }
 
-Return only the JSON object, no other text or markdown.`
+If the document contains only one product, return "products" as an array with a single item. If it contains multiple products, return one object per product in the array. Return only the JSON object, no other text or markdown.`
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer)
@@ -102,7 +109,7 @@ Deno.serve(async (req: Request) => {
       headers: anthropicHeaders,
       body: JSON.stringify({
         model: 'claude-opus-4-8',
-        max_tokens: 1024,
+        max_tokens: 4096,
         messages: [
           {
             role: 'user',
@@ -120,7 +127,7 @@ Deno.serve(async (req: Request) => {
     const anthropicData = await anthropicRes.json()
     const text: string = anthropicData.content?.[0]?.text ?? ''
 
-    let extracted: Record<string, unknown>
+    let extracted: { products?: unknown; document_warnings?: unknown }
     try {
       const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
       extracted = JSON.parse(match ? match[1] : text.trim())
@@ -129,8 +136,18 @@ Deno.serve(async (req: Request) => {
       return jsonError('Failed to parse AI response', 500)
     }
 
+    if (!Array.isArray(extracted.products)) {
+      console.error('Unexpected AI response shape:', text)
+      return jsonError('AI response missing product data', 500)
+    }
+
     return new Response(
-      JSON.stringify({ data: extracted }),
+      JSON.stringify({
+        data: {
+          products: extracted.products,
+          document_warnings: Array.isArray(extracted.document_warnings) ? extracted.document_warnings : [],
+        },
+      }),
       { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
     )
   } catch (err) {

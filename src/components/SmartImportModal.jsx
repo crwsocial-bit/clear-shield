@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Sparkles, Upload } from 'lucide-react'
+import { Sparkles, Upload, ChevronDown, ChevronRight } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
@@ -25,17 +25,158 @@ function normalizeIssuingBody(raw) {
   return 'other'
 }
 
-const EMPTY_REVIEW = {
-  sku: '',
-  product_name: '',
-  part_number: '',
-  manufacturer: '',
-  issuing_body: '',
-  cert_number: '',
-  issue_date: '',
-  expiration_date: '',
-  lead_content_percent: '',
-  notes: '',
+function extractedToProductForm(p) {
+  return {
+    key: crypto.randomUUID(),
+    sku: '',
+    product_name:         p.product_name         ?? '',
+    part_number:          p.part_number          ?? '',
+    manufacturer:         p.manufacturer         ?? '',
+    issuing_body:         normalizeIssuingBody(p.issuing_body),
+    cert_number:          p.cert_number          ?? '',
+    issue_date:           p.issue_date           ?? '',
+    expiration_date:      p.expiration_date      ?? '',
+    lead_content_percent: p.lead_content_percent != null ? String(p.lead_content_percent) : '',
+    notes:                p.notes                ?? '',
+    warnings:             Array.isArray(p.warnings) ? p.warnings : [],
+  }
+}
+
+function ProductFields({ product, onChange, autoFocusSku }) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">
+          SKU <span className="text-red-500">*</span>
+          <span className="text-gray-400 font-normal ml-1">— enter your internal SKU</span>
+        </label>
+        <input
+          type="text"
+          value={product.sku}
+          onChange={e => onChange('sku', e.target.value)}
+          placeholder="e.g. BRS-1234"
+          autoFocus={autoFocusSku}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Product Name / Description</label>
+        <input
+          type="text"
+          value={product.product_name}
+          onChange={e => onChange('product_name', e.target.value)}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Part Number</label>
+          <input
+            type="text"
+            value={product.part_number}
+            onChange={e => onChange('part_number', e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Manufacturer</label>
+          <input
+            type="text"
+            value={product.manufacturer}
+            onChange={e => onChange('manufacturer', e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Issuing Body</label>
+        <select
+          value={product.issuing_body}
+          onChange={e => onChange('issuing_body', e.target.value)}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">— Select —</option>
+          {ISSUING_BODIES.map(({ value, label }) => (
+            <option key={value} value={value}>{label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Cert Number</label>
+        <input
+          type="text"
+          value={product.cert_number}
+          onChange={e => onChange('cert_number', e.target.value)}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Issue Date</label>
+          <input
+            type="date"
+            value={product.issue_date}
+            onChange={e => onChange('issue_date', e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Expiration Date</label>
+          <input
+            type="date"
+            value={product.expiration_date}
+            onChange={e => onChange('expiration_date', e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Lead Content %</label>
+        <input
+          type="text"
+          value={product.lead_content_percent}
+          onChange={e => onChange('lead_content_percent', e.target.value)}
+          placeholder="e.g. 0.25"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Notes / Scope</label>
+        <textarea
+          value={product.notes}
+          onChange={e => onChange('notes', e.target.value)}
+          rows={3}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+        />
+      </div>
+    </div>
+  )
+}
+
+function ProductWarnings({ warnings }) {
+  if (warnings.length === 0) return null
+  return (
+    <div className="mb-4 bg-yellow-50 border border-yellow-300 rounded-lg px-3 py-3">
+      <p className="text-xs font-semibold text-yellow-800 mb-1.5">
+        AI flagged the following issues — review before saving:
+      </p>
+      <ul className="space-y-1">
+        {warnings.map((w, i) => (
+          <li key={i} className="flex items-start gap-1.5 text-xs text-yellow-700">
+            <span className="shrink-0 mt-px">⚠</span>
+            <span>{w}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 }
 
 export default function SmartImportModal({ onClose, onSaved }) {
@@ -43,8 +184,9 @@ export default function SmartImportModal({ onClose, onSaved }) {
   const [file, setFile]               = useState(null)
   const [dragging, setDragging]       = useState(false)
   const [stage, setStage]             = useState('upload') // 'upload' | 'processing' | 'review'
-  const [form, setForm]               = useState(EMPTY_REVIEW)
-  const [warnings, setWarnings]       = useState([])
+  const [products, setProducts]       = useState([])
+  const [expanded, setExpanded]       = useState({})
+  const [documentWarnings, setDocumentWarnings] = useState([])
   const [saving, setSaving]           = useState(false)
   const [error, setError]             = useState('')
   const [processError, setProcessError] = useState('')
@@ -100,19 +242,18 @@ export default function SmartImportModal({ onClose, onSaved }) {
       }
 
       const d = result.data ?? {}
-      setWarnings(Array.isArray(d.warnings) ? d.warnings : [])
-      setForm({
-        sku: '',
-        product_name:         d.product_name         ?? '',
-        part_number:          d.part_number          ?? '',
-        manufacturer:         d.manufacturer         ?? '',
-        issuing_body:         normalizeIssuingBody(d.issuing_body),
-        cert_number:          d.cert_number          ?? '',
-        issue_date:           d.issue_date           ?? '',
-        expiration_date:      d.expiration_date      ?? '',
-        lead_content_percent: d.lead_content_percent != null ? String(d.lead_content_percent) : '',
-        notes:                d.notes                ?? '',
-      })
+      const rawProducts = Array.isArray(d.products) ? d.products : []
+
+      if (rawProducts.length === 0) {
+        setProcessError('AI could not find any products in this document. Please try a different file.')
+        setStage('upload')
+        return
+      }
+
+      const formProducts = rawProducts.map(extractedToProductForm)
+      setProducts(formProducts)
+      setExpanded(Object.fromEntries(formProducts.map((p, i) => [p.key, i === 0])))
+      setDocumentWarnings(Array.isArray(d.document_warnings) ? d.document_warnings : [])
       setStage('review')
     } catch (err) {
       setProcessError(err?.message ?? 'Something went wrong. Please try again.')
@@ -120,9 +261,31 @@ export default function SmartImportModal({ onClose, onSaved }) {
     }
   }
 
+  function updateProduct(key, field, value) {
+    setProducts(prev => prev.map(p => (p.key === key ? { ...p, [field]: value } : p)))
+  }
+
+  function removeProduct(key) {
+    setProducts(prev => prev.filter(p => p.key !== key))
+    setExpanded(prev => {
+      const next = { ...prev }
+      delete next[key]
+      return next
+    })
+  }
+
+  function toggleExpanded(key) {
+    setExpanded(prev => ({ ...prev, [key]: !prev[key] }))
+  }
+
   async function handleSave() {
-    if (!form.sku.trim()) {
-      setError('SKU is required.')
+    if (products.length === 0) {
+      setError('No products to save.')
+      return
+    }
+    const missingSku = products.find(p => !p.sku.trim())
+    if (missingSku) {
+      setError('Every product needs a SKU before saving.')
       return
     }
     setSaving(true)
@@ -131,44 +294,46 @@ export default function SmartImportModal({ onClose, onSaved }) {
     try {
       const { data: { user } } = await supabase.auth.getUser()
 
-      const { data: product, error: productErr } = await supabase
-        .from('products')
-        .insert({
-          sku:          form.sku.trim(),
-          part_number:  form.part_number.trim()  || null,
-          description:  form.product_name.trim() || null,
-          manufacturer: form.manufacturer.trim() || null,
-          notes:        form.notes.trim()        || null,
-          user_id:      user.id,
-          needs_review: warnings.length > 0,
-        })
-        .select()
-        .single()
+      for (const p of products) {
+        const { data: product, error: productErr } = await supabase
+          .from('products')
+          .insert({
+            sku:          p.sku.trim(),
+            part_number:  p.part_number.trim()  || null,
+            description:  p.product_name.trim() || null,
+            manufacturer: p.manufacturer.trim() || null,
+            notes:        p.notes.trim()        || null,
+            user_id:      user.id,
+            needs_review: p.warnings.length > 0,
+          })
+          .select()
+          .single()
 
-      if (productErr) {
-        setError(productErr.message)
-        setSaving(false)
-        return
-      }
-
-      const hasCertData = form.cert_number || form.issuing_body || form.issue_date || form.expiration_date
-      if (hasCertData) {
-        let certNotes = form.notes.trim() || null
-        if (form.lead_content_percent.trim()) {
-          const leadNote = `Lead content: ${form.lead_content_percent.trim()}%`
-          certNotes = certNotes ? `${certNotes}\n${leadNote}` : leadNote
+        if (productErr) {
+          setError(`${p.sku.trim()}: ${productErr.message}`)
+          setSaving(false)
+          return
         }
 
-        await supabase.from('cert_documents').insert({
-          product_id:       product.id,
-          user_id:          user.id,
-          document_type:    'third_party_certificate',
-          issuing_body:     form.issuing_body || null,
-          cert_number:      form.cert_number.trim() || null,
-          cert_issued_date: form.issue_date || null,
-          cert_expiration:  form.expiration_date || null,
-          notes:            certNotes,
-        })
+        const hasCertData = p.cert_number || p.issuing_body || p.issue_date || p.expiration_date
+        if (hasCertData) {
+          let certNotes = p.notes.trim() || null
+          if (p.lead_content_percent.trim()) {
+            const leadNote = `Lead content: ${p.lead_content_percent.trim()}%`
+            certNotes = certNotes ? `${certNotes}\n${leadNote}` : leadNote
+          }
+
+          await supabase.from('cert_documents').insert({
+            product_id:       product.id,
+            user_id:          user.id,
+            document_type:    'third_party_certificate',
+            issuing_body:     p.issuing_body || null,
+            cert_number:      p.cert_number.trim() || null,
+            cert_issued_date: p.issue_date || null,
+            cert_expiration:  p.expiration_date || null,
+            notes:            certNotes,
+          })
+        }
       }
 
       onSaved()
@@ -263,17 +428,19 @@ export default function SmartImportModal({ onClose, onSaved }) {
               <>
                 <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
                   <p className="text-xs text-blue-700 font-medium">
-                    AI extracted the fields below — review and correct before saving.
+                    {products.length > 1
+                      ? `AI found ${products.length} products in this document — review each before saving.`
+                      : 'AI extracted the fields below — review and correct before saving.'}
                   </p>
                 </div>
 
-                {warnings.length > 0 && (
+                {documentWarnings.length > 0 && (
                   <div className="mb-4 bg-yellow-50 border border-yellow-300 rounded-lg px-3 py-3">
                     <p className="text-xs font-semibold text-yellow-800 mb-1.5">
-                      AI flagged the following issues — review before saving:
+                      Document-level warnings:
                     </p>
                     <ul className="space-y-1">
-                      {warnings.map((w, i) => (
+                      {documentWarnings.map((w, i) => (
                         <li key={i} className="flex items-start gap-1.5 text-xs text-yellow-700">
                           <span className="shrink-0 mt-px">⚠</span>
                           <span>{w}</span>
@@ -289,119 +456,67 @@ export default function SmartImportModal({ onClose, onSaved }) {
                   </div>
                 )}
 
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      SKU <span className="text-red-500">*</span>
-                      <span className="text-gray-400 font-normal ml-1">— enter your internal SKU</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={form.sku}
-                      onChange={e => setForm(f => ({ ...f, sku: e.target.value }))}
-                      placeholder="e.g. BRS-1234"
-                      autoFocus
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Product Name / Description</label>
-                    <input
-                      type="text"
-                      value={form.product_name}
-                      onChange={e => setForm(f => ({ ...f, product_name: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Part Number</label>
-                      <input
-                        type="text"
-                        value={form.part_number}
-                        onChange={e => setForm(f => ({ ...f, part_number: e.target.value }))}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                {products.length <= 1 ? (
+                  products.map(p => (
+                    <div key={p.key}>
+                      <ProductWarnings warnings={p.warnings} />
+                      <ProductFields
+                        product={p}
+                        onChange={(field, value) => updateProduct(p.key, field, value)}
+                        autoFocusSku
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Manufacturer</label>
-                      <input
-                        type="text"
-                        value={form.manufacturer}
-                        onChange={e => setForm(f => ({ ...f, manufacturer: e.target.value }))}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
+                  ))
+                ) : (
+                  <div className="space-y-3">
+                    {products.map((p, i) => (
+                      <div key={p.key} className="border border-gray-200 rounded-xl overflow-hidden">
+                        <div
+                          className="flex items-center justify-between gap-3 px-4 py-3 bg-gray-50 cursor-pointer select-none"
+                          onClick={() => toggleExpanded(p.key)}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            {expanded[p.key]
+                              ? <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+                              : <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />}
+                            <span className="text-sm font-medium text-gray-900 shrink-0">Product {i + 1}</span>
+                            <span className="text-xs text-gray-500 truncate">
+                              {p.product_name || p.part_number || 'Untitled product'}
+                            </span>
+                            {p.warnings.length > 0 && (
+                              <span className="shrink-0 text-[10px] font-medium bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded-full">
+                                {p.warnings.length} warning{p.warnings.length > 1 ? 's' : ''}
+                              </span>
+                            )}
+                            {!p.sku.trim() && (
+                              <span className="shrink-0 text-[10px] font-medium bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full">
+                                SKU needed
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={e => { e.stopPropagation(); removeProduct(p.key) }}
+                            className="shrink-0 text-xs text-gray-400 hover:text-red-600"
+                          >
+                            Remove
+                          </button>
+                        </div>
 
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Issuing Body</label>
-                    <select
-                      value={form.issuing_body}
-                      onChange={e => setForm(f => ({ ...f, issuing_body: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">— Select —</option>
-                      {ISSUING_BODIES.map(({ value, label }) => (
-                        <option key={value} value={value}>{label}</option>
-                      ))}
-                    </select>
+                        {expanded[p.key] && (
+                          <div className="px-4 py-4 border-t border-gray-200">
+                            <ProductWarnings warnings={p.warnings} />
+                            <ProductFields
+                              product={p}
+                              onChange={(field, value) => updateProduct(p.key, field, value)}
+                              autoFocusSku={false}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Cert Number</label>
-                    <input
-                      type="text"
-                      value={form.cert_number}
-                      onChange={e => setForm(f => ({ ...f, cert_number: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Issue Date</label>
-                      <input
-                        type="date"
-                        value={form.issue_date}
-                        onChange={e => setForm(f => ({ ...f, issue_date: e.target.value }))}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Expiration Date</label>
-                      <input
-                        type="date"
-                        value={form.expiration_date}
-                        onChange={e => setForm(f => ({ ...f, expiration_date: e.target.value }))}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Lead Content %</label>
-                    <input
-                      type="text"
-                      value={form.lead_content_percent}
-                      onChange={e => setForm(f => ({ ...f, lead_content_percent: e.target.value }))}
-                      placeholder="e.g. 0.25"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Notes / Scope</label>
-                    <textarea
-                      value={form.notes}
-                      onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                      rows={3}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                    />
-                  </div>
-                </div>
+                )}
               </>
             )}
           </div>
@@ -433,7 +548,7 @@ export default function SmartImportModal({ onClose, onSaved }) {
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => { setStage('upload'); setError(''); setWarnings([]) }}
+                  onClick={() => { setStage('upload'); setError(''); setProducts([]); setExpanded({}); setDocumentWarnings([]) }}
                   className="flex-1 border border-gray-300 text-gray-700 text-sm font-medium py-2 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Back
@@ -441,10 +556,10 @@ export default function SmartImportModal({ onClose, onSaved }) {
                 <button
                   type="button"
                   onClick={handleSave}
-                  disabled={saving}
+                  disabled={saving || products.length === 0}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium py-2 rounded-lg transition-colors"
                 >
-                  {saving ? 'Saving…' : 'Save to ClearShield'}
+                  {saving ? 'Saving…' : products.length > 1 ? 'Save All to ClearShield' : 'Save to ClearShield'}
                 </button>
               </div>
             )}
