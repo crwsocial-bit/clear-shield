@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Sparkles } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
@@ -56,6 +57,21 @@ const ISSUING_BODIES = [
 const IB_LABEL = Object.fromEntries(ISSUING_BODIES.map(b => [b.value, b.label]))
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+// Opens a cert document's uploaded file via a short-lived signed URL (bucket is private).
+// The blank tab is opened synchronously on click so browsers don't treat the later
+// async redirect as a popup.
+async function openCertFile(path) {
+  if (!path) return
+  const win = window.open('', '_blank')
+  const { data, error } = await supabase.storage.from('cert-documents').createSignedUrl(path, 60)
+  if (error || !data?.signedUrl) {
+    console.error('Could not generate signed URL for cert file:', error)
+    win?.close()
+    return
+  }
+  win.location.href = data.signedUrl
+}
 
 function normalizeIssuingBody(raw) {
   if (!raw) return null
@@ -183,6 +199,103 @@ const DOC_TYPE_SHORT = {
   other:                           'Other',
 }
 
+// ─── DocCountBadge ────────────────────────────────────────────────────────────
+
+const DOC_MENU_WIDTH = 224 // px, matches w-56
+
+function DocCountBadge({ docs }) {
+  const [open, setOpen]     = useState(false)
+  const [coords, setCoords] = useState(null)
+  const btnRef  = useRef(null)
+  const menuRef = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    function handleClick(e) {
+      if (menuRef.current?.contains(e.target) || btnRef.current?.contains(e.target)) return
+      setOpen(false)
+    }
+    function handleDismiss() { setOpen(false) }
+    document.addEventListener('mousedown', handleClick)
+    window.addEventListener('scroll', handleDismiss, true)
+    window.addEventListener('resize', handleDismiss)
+    return () => {
+      document.removeEventListener('mousedown', handleClick)
+      window.removeEventListener('scroll', handleDismiss, true)
+      window.removeEventListener('resize', handleDismiss)
+    }
+  }, [open])
+
+  function toggleOpen() {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect()
+      setCoords({
+        top:  rect.bottom + 4,
+        left: Math.min(rect.left, window.innerWidth - DOC_MENU_WIDTH - 8),
+      })
+    }
+    setOpen(o => !o)
+  }
+
+  if (docs.length === 0) return null
+
+  if (docs.length === 1) {
+    const doc = docs[0]
+    const hasFile = !!doc.source_file_path
+    return (
+      <button
+        type="button"
+        disabled={!hasFile}
+        onClick={() => openCertFile(doc.source_file_path)}
+        title={hasFile ? 'Open document' : 'No file uploaded for this document'}
+        className={`text-xs self-center ${hasFile ? 'text-blue-600 hover:text-blue-800 hover:underline' : 'text-gray-400 cursor-default'}`}
+      >
+        1 doc
+      </button>
+    )
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        ref={btnRef}
+        onClick={toggleOpen}
+        className="text-xs text-blue-600 hover:text-blue-800 hover:underline self-center"
+      >
+        {docs.length} docs
+      </button>
+      {open && coords && createPortal(
+        <div
+          ref={menuRef}
+          style={{ position: 'fixed', top: coords.top, left: coords.left, width: DOC_MENU_WIDTH }}
+          className="z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1"
+        >
+          {docs.map(doc => {
+            const hasFile = !!doc.source_file_path
+            return (
+              <button
+                key={doc.id}
+                type="button"
+                disabled={!hasFile}
+                onClick={() => { setOpen(false); openCertFile(doc.source_file_path) }}
+                className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between gap-2 ${hasFile ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-400 cursor-default'}`}
+              >
+                <span className="truncate">
+                  {DOC_TYPE_SHORT[doc.document_type] ?? doc.document_type}
+                  {doc.cert_number ? ` · ${doc.cert_number}` : ''}
+                </span>
+                {!hasFile && <span className="shrink-0 text-[10px]">No file</span>}
+              </button>
+            )
+          })}
+        </div>,
+        document.body
+      )}
+    </>
+  )
+}
+
 function CertDocRow({ doc, onEdit, onDelete }) {
   const [confirmDel, setConfirmDel] = useState(false)
   const today = new Date().toISOString().split('T')[0]
@@ -232,6 +345,9 @@ function CertDocRow({ doc, onEdit, onDelete }) {
             </>
           ) : (
             <>
+              {doc.source_file_path && (
+                <button type="button" onClick={() => openCertFile(doc.source_file_path)} className="text-blue-600 hover:text-blue-800 font-medium px-1">View file</button>
+              )}
               <button type="button" onClick={onEdit} className="text-blue-600 hover:text-blue-800 font-medium px-1">Edit</button>
               <button type="button" onClick={() => setConfirmDel(true)} className="text-gray-300 hover:text-red-500 text-base px-1">&times;</button>
             </>
@@ -1030,7 +1146,6 @@ export default function Products() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filtered.map(p => {
-                  const docCount = p.cert_documents?.length ?? 0
                   const selected = isSelected('product', p.id)
                   return (
                     <tr key={p.id} className={`hover:bg-gray-50 transition-colors ${selected ? 'bg-blue-50' : ''}`}>
@@ -1059,9 +1174,7 @@ export default function Products() {
                               ⚠ Needs Review
                             </span>
                           )}
-                          {docCount > 0 && (
-                            <span className="text-xs text-gray-400 self-center">{docCount} doc{docCount !== 1 ? 's' : ''}</span>
-                          )}
+                          <DocCountBadge docs={p.cert_documents ?? []} />
                         </div>
                       </td>
                       <td className="px-4 py-3">
