@@ -487,7 +487,7 @@ function PricingSection() {
             Simple, Transparent Pricing.
           </h2>
           <p className="text-slate-600 text-lg">
-            No setup fees. No annual contracts. Cancel anytime.
+            Flexible plans for distributors of any size. Contact us for pricing.
           </p>
         </div>
 
