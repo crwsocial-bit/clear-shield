@@ -11,7 +11,7 @@ function HeroOrbs() {
       <div
         className="absolute top-0 left-1/3 w-[600px] h-[600px] rounded-full opacity-[0.12]"
         style={{
-          background: 'radial-gradient(ellipse, #10b981 0%, transparent 65%)',
+          background: 'radial-gradient(ellipse, #3B82F6 0%, transparent 65%)',
           filter: 'blur(60px)',
           animation: 'orb-float 14s ease-in-out infinite',
         }}
@@ -27,7 +27,7 @@ function HeroOrbs() {
       <div
         className="absolute top-1/3 right-1/3 w-[300px] h-[300px] rounded-full opacity-[0.07]"
         style={{
-          background: 'radial-gradient(ellipse, #10b981 0%, transparent 65%)',
+          background: 'radial-gradient(ellipse, #3B82F6 0%, transparent 65%)',
           filter: 'blur(40px)',
           animation: 'orb-float 11s ease-in-out infinite 3s',
         }}
@@ -49,10 +49,8 @@ function LandingNavbar() {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? 'bg-slate-900/98 backdrop-blur-md shadow-2xl shadow-black/30 border-b border-white/5'
-          : 'bg-transparent'
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-slate-800 border-b border-slate-700 ${
+        scrolled ? 'shadow-2xl shadow-black/30' : ''
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -69,7 +67,7 @@ function LandingNavbar() {
           </Link>
           <Link
             to="/signup"
-            className="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors shadow-lg shadow-emerald-900/30"
+            className="bg-blue-500 hover:bg-blue-400 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors shadow-lg shadow-blue-900/30"
           >
             Get Started
           </Link>
@@ -98,17 +96,10 @@ function Hero() {
 
       <div className="relative max-w-7xl mx-auto px-6 py-32 md:py-40">
         <div className="max-w-4xl">
-          <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-1.5 mb-10">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-emerald-400 text-xs font-semibold tracking-wide uppercase">
-              NSF/ANSI 372 · EPA Lead-Free Rule · SDWA 1417
-            </span>
-          </div>
-
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-[4.25rem] font-extrabold text-white leading-[1.08] tracking-tight mb-7">
             Stay Organized. Stay Compliant.
             <br />
-            <span className="text-emerald-400">Sell Confidently.</span>
+            <span className="text-blue-400">Sell Confidently.</span>
           </h1>
 
           <p className="text-slate-300 text-xl leading-relaxed max-w-2xl mb-10">
@@ -119,7 +110,7 @@ function Hero() {
           <div className="flex flex-col sm:flex-row gap-4">
             <Link
               to="/signup"
-              className="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-base font-semibold px-8 py-3.5 rounded-xl transition-all shadow-xl shadow-emerald-900/40 hover:-translate-y-0.5"
+              className="inline-flex items-center justify-center bg-blue-500 hover:bg-blue-400 text-white text-base font-semibold px-8 py-3.5 rounded-xl transition-all shadow-xl shadow-blue-900/40 hover:-translate-y-0.5"
             >
               Get Started Free &rarr;
             </Link>
@@ -230,9 +221,9 @@ function SolutionSection() {
         </div>
 
         <div className="max-w-3xl mx-auto bg-slate-900 rounded-2xl p-10 md:p-12 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 rounded-l-2xl" />
+          <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 rounded-l-2xl" />
           <svg
-            className="w-10 h-10 text-emerald-500/20 mb-6"
+            className="w-10 h-10 text-blue-500/20 mb-6"
             fill="currentColor"
             viewBox="0 0 32 32"
           >
@@ -305,10 +296,10 @@ function FeaturesSection() {
           {features.map((f) => (
             <div
               key={f.title}
-              className="bg-white rounded-2xl border border-slate-200 p-8 hover:border-emerald-200 hover:shadow-md transition-all group"
+              className="bg-white rounded-2xl border border-slate-200 p-8 hover:border-blue-200 hover:shadow-md transition-all group"
             >
               <span className="text-3xl mb-5 block">{f.icon}</span>
-              <h3 className="text-slate-900 font-semibold text-base mb-3 group-hover:text-emerald-700 transition-colors">
+              <h3 className="text-slate-900 font-semibold text-base mb-3 group-hover:text-blue-700 transition-colors">
                 {f.title}
               </h3>
               <p className="text-slate-500 text-sm leading-relaxed">{f.body}</p>
@@ -371,7 +362,7 @@ function HowItWorksSection() {
                 <div className="flex md:flex-col items-start gap-4 md:gap-0">
                   <div className="shrink-0">
                     <div className="w-16 h-16 rounded-2xl bg-slate-900 flex items-center justify-center shadow-lg md:mb-6">
-                      <span className="text-emerald-400 text-sm font-bold tracking-wide">
+                      <span className="text-blue-400 text-sm font-bold tracking-wide">
                         {step.n}
                       </span>
                     </div>
@@ -506,13 +497,13 @@ function PricingSection() {
               key={plan.name}
               className={`relative rounded-2xl p-8 flex flex-col ${
                 plan.highlighted
-                  ? 'bg-slate-900 border-2 border-emerald-500 shadow-2xl shadow-emerald-900/20 scale-105'
+                  ? 'bg-slate-900 border-2 border-blue-500 shadow-2xl shadow-blue-900/20 scale-105'
                   : 'bg-white border border-slate-200 shadow-sm'
               }`}
             >
               {plan.badge && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <span className="bg-emerald-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg shadow-emerald-900/30">
+                  <span className="bg-blue-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg shadow-blue-900/30">
                     {plan.badge}
                   </span>
                 </div>
@@ -535,7 +526,7 @@ function PricingSection() {
                 </p>
                 <p
                   className={`text-2xl font-bold ${
-                    plan.highlighted ? 'text-emerald-400' : 'text-slate-900'
+                    plan.highlighted ? 'text-blue-400' : 'text-slate-900'
                   }`}
                 >
                   {plan.price}
@@ -547,7 +538,7 @@ function PricingSection() {
                   <li key={f} className="flex items-start gap-3">
                     <svg
                       className={`w-4 h-4 mt-0.5 shrink-0 ${
-                        plan.highlighted ? 'text-emerald-400' : 'text-emerald-500'
+                        plan.highlighted ? 'text-blue-400' : 'text-blue-500'
                       }`}
                       fill="none"
                       viewBox="0 0 24 24"
@@ -571,7 +562,7 @@ function PricingSection() {
                 to="/signup"
                 className={`w-full text-center py-3 rounded-xl text-sm font-semibold transition-all ${
                   plan.highlighted
-                    ? 'bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-900/30 hover:-translate-y-0.5'
+                    ? 'bg-blue-500 hover:bg-blue-400 text-white shadow-lg shadow-blue-900/30 hover:-translate-y-0.5'
                     : 'bg-slate-900 hover:bg-slate-800 text-white'
                 }`}
               >
@@ -594,13 +585,13 @@ function ClosingCTA() {
         className="absolute inset-0 opacity-[0.06] pointer-events-none"
         style={{
           backgroundImage:
-            'radial-gradient(ellipse 80% 80% at 50% 50%, #10b981 0%, transparent 70%)',
+            'radial-gradient(ellipse 80% 80% at 50% 50%, #3B82F6 0%, transparent 70%)',
         }}
         aria-hidden="true"
       />
       <div className="relative max-w-7xl mx-auto px-6 text-center">
         <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-6 max-w-3xl mx-auto">
-          Never Get Caught <span className="text-emerald-400">Off Guard.</span>
+          Never Get Caught <span className="text-blue-400">Off Guard.</span>
         </h2>
         <p className="text-slate-400 text-lg mb-10 max-w-lg mx-auto">
           Get your catalog tracked and your certs organized before the next audit finds a gap. No
@@ -608,7 +599,7 @@ function ClosingCTA() {
         </p>
         <Link
           to="/signup"
-          className="inline-flex items-center bg-emerald-500 hover:bg-emerald-400 text-white text-base font-semibold px-10 py-4 rounded-xl transition-all shadow-2xl shadow-emerald-900/40 hover:-translate-y-0.5"
+          className="inline-flex items-center bg-blue-500 hover:bg-blue-400 text-white text-base font-semibold px-10 py-4 rounded-xl transition-all shadow-2xl shadow-blue-900/40 hover:-translate-y-0.5"
         >
           Get Started Free &rarr;
         </Link>
