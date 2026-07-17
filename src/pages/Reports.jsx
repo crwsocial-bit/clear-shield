@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import JSZip from 'jszip'
 import { supabase } from '../lib/supabaseClient'
 import { statusLabel } from '../utils/statusLabel'
 
@@ -44,7 +45,7 @@ function formatDate(str) {
   return `${m}/${d}/${y}`
 }
 
-function downloadCSV(rows) {
+function buildCSVString(rows) {
   const headers = ['SKU','Part Number','Description','Manufacturer','Cert Number','Issuing Body','Cert Issued Date','Cert Expiration Date','PO Number','Status']
   const data = rows.map(p => {
     const doc = primaryDoc(p)
@@ -55,14 +56,68 @@ function downloadCSV(rows) {
       p.po_number??'', statusLabel(certStatus(p)),
     ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')
   })
-  const csv = [headers.join(','), ...data].join('\n')
-  const blob = new Blob([csv], { type:'text/csv' })
-  const url  = URL.createObjectURL(blob)
-  const a    = document.createElement('a')
+  return [headers.join(','), ...data].join('\n')
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob)
+  const a   = document.createElement('a')
   a.href = url
-  a.download = `clearshield-report-${new Date().toISOString().split('T')[0]}.csv`
+  a.download = filename
   a.click()
   URL.revokeObjectURL(url)
+}
+
+function downloadCSV(rows) {
+  const blob = new Blob([buildCSVString(rows)], { type:'text/csv' })
+  downloadBlob(blob, `clearshield-report-${new Date().toISOString().split('T')[0]}.csv`)
+}
+
+function sanitizeFilenamePart(str) {
+  return String(str ?? '').trim().replace(/[\\/:*?"<>|]+/g, '-').trim() || 'unknown'
+}
+
+function fileExtension(path) {
+  const match = /\.([a-zA-Z0-9]+)$/.exec(path ?? '')
+  return match ? match[1].toLowerCase() : 'pdf'
+}
+
+// Bundles the CSV report plus every uploaded cert file for the given products into one ZIP.
+// Products with no uploaded file are skipped silently (they're a valid state per NSF scope
+// rule #4 — e.g. self-certs with no third-party document — not an error).
+async function buildCertDocsZip(rows) {
+  const zip = new JSZip()
+  zip.file(`clearshield-report-${new Date().toISOString().split('T')[0]}.csv`, buildCSVString(rows))
+
+  const usedNames = new Set()
+
+  const fileDocs = rows.flatMap(p =>
+    (p.cert_documents ?? [])
+      .filter(doc => doc.source_file_path)
+      .map(doc => ({ product: p, doc }))
+  )
+
+  await Promise.all(fileDocs.map(async ({ product, doc }) => {
+    const { data, error } = await supabase.storage
+      .from('cert-documents')
+      .createSignedUrl(doc.source_file_path, 60)
+    if (error || !data?.signedUrl) return
+
+    const res = await fetch(data.signedUrl)
+    if (!res.ok) return
+    const blob = await res.blob()
+
+    const base = `${sanitizeFilenamePart(product.part_number || product.sku)}_${sanitizeFilenamePart(doc.cert_number || doc.document_type)}`
+    const ext  = fileExtension(doc.source_file_path)
+    let name = `${base}.${ext}`
+    let n = 2
+    while (usedNames.has(name)) { name = `${base}-${n}.${ext}`; n++ }
+    usedNames.add(name)
+
+    zip.file(name, blob)
+  }))
+
+  return zip.generateAsync({ type: 'blob' })
 }
 
 function FilterChip({ label, onRemove }) {
@@ -82,6 +137,8 @@ export default function Reports() {
   const [filters,      setFilters]      = useState(EMPTY_FILTERS)
   const [selectedIds,  setSelectedIds]  = useState(new Set())
   const [filtersOpen,  setFiltersOpen]  = useState(false)
+  const [includeCertDocs, setIncludeCertDocs] = useState(false)
+  const [exporting,       setExporting]       = useState(false)
 
   const reportDate = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' })
 
@@ -166,6 +223,17 @@ export default function Reports() {
   const allVisibleSelected = filtered.length > 0 && filtered.every(p => selectedIds.has(p.id))
   const someSelected       = filtered.some(p => selectedIds.has(p.id))
 
+  async function handleDownload() {
+    if (!includeCertDocs) { downloadCSV(exportData); return }
+    setExporting(true)
+    try {
+      const blob = await buildCertDocsZip(exportData)
+      downloadBlob(blob, `clearshield-report-${new Date().toISOString().split('T')[0]}.zip`)
+    } finally {
+      setExporting(false)
+    }
+  }
+
   // Export button label
   function exportLabel(base) {
     if (selectedIds.size > 0) return `${base} (${selectedIds.size} selected)`
@@ -202,19 +270,31 @@ export default function Reports() {
           <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
           <p className="text-gray-500 text-sm mt-1">NSF/ANSI 372 compliance report — {reportDate}</p>
         </div>
-        <div className="flex gap-3">
-          <button
-            onClick={() => downloadCSV(exportData)}
-            className="border border-gray-300 hover:border-gray-400 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-          >
-            {exportLabel('Download CSV')}
-          </button>
-          <button
-            onClick={() => window.print()}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-          >
-            {exportLabel('Print / PDF')}
-          </button>
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex gap-3">
+            <button
+              onClick={handleDownload}
+              disabled={exporting}
+              className="border border-gray-300 hover:border-gray-400 disabled:opacity-60 disabled:cursor-wait text-gray-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              {exporting ? 'Preparing ZIP…' : exportLabel(includeCertDocs ? 'Download ZIP' : 'Download CSV')}
+            </button>
+            <button
+              onClick={() => window.print()}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              {exportLabel('Print / PDF')}
+            </button>
+          </div>
+          <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={includeCertDocs}
+              onChange={e => setIncludeCertDocs(e.target.checked)}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            Include original cert documents
+          </label>
         </div>
       </div>
 
