@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { statusLabel } from '../utils/statusLabel'
 
 const TODAY = new Date().toISOString().split('T')[0]
 const IN_90 = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
@@ -107,7 +108,7 @@ function DrillDown({ products, type, onClose }) {
       return ae.localeCompare(be) || a.sku.localeCompare(b.sku)
     })
 
-  const title = type === 'not-sellable' ? 'Not Compliant — Detail'
+  const title = type === 'not-sellable' ? `${statusLabel('not-sellable')} — Detail`
     : type === 'expiring' ? 'Expiring Within 90 Days'
     : '—'
 
@@ -230,7 +231,7 @@ export default function Dashboard() {
               valueColor="text-gray-900"
             />
             <StatCard
-              label="Compliant"
+              label={statusLabel('sellable')}
               value={sellable}
               sub={`${sellablePct}% of catalog — valid cert on file`}
               valueColor="text-green-600"
@@ -244,7 +245,7 @@ export default function Dashboard() {
               active={drillDown === 'expiring'}
             />
             <StatCard
-              label="Not Compliant"
+              label={statusLabel('not-sellable')}
               value={notSellable}
               sub="expired cert or no cert on file"
               valueColor="text-red-600"

@@ -6,6 +6,7 @@ import { parseCSV } from '../utils/csvParser'
 import { TypeBadge } from './Companies'
 import { useAuditList } from '../lib/auditListContext'
 import SmartImportModal from '../components/SmartImportModal'
+import { statusLabel } from '../utils/statusLabel'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -107,7 +108,7 @@ export function SellableBadge({ product }) {
         sellable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'
       }`}>
         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${sellable ? 'bg-green-500' : 'bg-red-500'}`} />
-        {sellable ? 'Compliant' : 'Not Compliant'}
+        {sellable ? statusLabel('sellable') : statusLabel('not-sellable')}
       </span>
       {detail && <span className="text-xs text-gray-400 pl-0.5">{detail}</span>}
     </div>
@@ -963,10 +964,10 @@ export default function Products() {
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All</option>
-            <option value="valid">Compliant</option>
-            <option value="expiring">Compliant — Expiring Soon</option>
-            <option value="expired">Not Compliant — Expired</option>
-            <option value="missing">Not Compliant — No Cert</option>
+            <option value="valid">{statusLabel('valid')}</option>
+            <option value="expiring">{statusLabel('sellable')} — {statusLabel('expiring')}</option>
+            <option value="expired">{statusLabel('not-sellable')} — {statusLabel('expired')}</option>
+            <option value="missing">{statusLabel('not-sellable')} — {statusLabel('missing')}</option>
           </select>
         </div>
       )}

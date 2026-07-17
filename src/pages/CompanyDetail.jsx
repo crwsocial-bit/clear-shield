@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { CompanyPanel, TypeBadge } from './Companies'
+import { statusLabel } from '../utils/statusLabel'
 
 const TODAY = new Date().toISOString().split('T')[0]
 const IN_90 = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
@@ -38,10 +39,6 @@ const STATUS_BADGE = {
   expired:  'bg-red-100 text-red-700',
   missing:  'bg-gray-100 text-gray-500',
 }
-const STATUS_LABEL = {
-  valid:'Compliant', expiring:'Expiring Soon', expired:'Expired', missing:'No Cert',
-}
-
 function InfoRow({ label, value, href }) {
   if (!value) return null
   return (
@@ -187,7 +184,7 @@ export default function CompanyDetail() {
                       <td className="px-4 py-2.5 text-gray-700">{doc?.cert_expiration ?? '—'}</td>
                       <td className="px-4 py-2.5">
                         <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE[status]}`}>
-                          {STATUS_LABEL[status]}
+                          {statusLabel(status)}
                         </span>
                       </td>
                     </tr>

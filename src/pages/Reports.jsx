@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { statusLabel } from '../utils/statusLabel'
 
 const TODAY = new Date().toISOString().split('T')[0]
 const IN_90 = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
@@ -30,9 +31,6 @@ function primaryDoc(p) {
   return [...active].sort((a, b) => (b.cert_expiration ?? '9999-99-99').localeCompare(a.cert_expiration ?? '9999-99-99'))[0] ?? docs[0]
 }
 
-const STATUS_LABEL = {
-  valid:'Compliant', expiring:'Expiring Soon', expired:'Expired', missing:'No Cert on File',
-}
 const STATUS_PRIORITY = { expired:0, expiring:1, missing:2, valid:3 }
 const STATUS_COLOR = {
   valid:'text-green-700', expiring:'text-yellow-700', expired:'text-red-700', missing:'text-gray-500',
@@ -54,7 +52,7 @@ function downloadCSV(rows) {
       p.sku, p.part_number??'', p.description??'', p.manufacturer??'',
       doc?.cert_number??'', doc?.issuing_body??'',
       formatDate(doc?.cert_issued_date), formatDate(doc?.cert_expiration),
-      p.po_number??'', STATUS_LABEL[certStatus(p)],
+      p.po_number??'', statusLabel(certStatus(p)),
     ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')
   })
   const csv = [headers.join(','), ...data].join('\n')
@@ -144,7 +142,7 @@ export default function Reports() {
     filters.search       && { key:'search',       label:`"${filters.search}"` },
     filters.manufacturer && { key:'manufacturer', label:filters.manufacturer },
     filters.poNumber     && { key:'poNumber',     label:`PO: ${filters.poNumber}` },
-    filters.status !== 'all' && { key:'status',  label:STATUS_LABEL[filters.status] },
+    filters.status !== 'all' && { key:'status',  label:statusLabel(filters.status) },
     filters.expiresFrom  && { key:'expiresFrom',  label:`Expires from ${formatDate(filters.expiresFrom)}` },
     filters.expiresTo    && { key:'expiresTo',    label:`Expires to ${formatDate(filters.expiresTo)}` },
   ].filter(Boolean)
@@ -286,10 +284,10 @@ export default function Reports() {
                 <select value={filters.status} onChange={e => updateFilter('status', e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="all">All statuses</option>
-                  <option value="valid">Compliant</option>
-                  <option value="expiring">Expiring Soon</option>
-                  <option value="expired">Expired</option>
-                  <option value="missing">No Cert</option>
+                  <option value="valid">{statusLabel('valid')}</option>
+                  <option value="expiring">{statusLabel('expiring')}</option>
+                  <option value="expired">{statusLabel('expired')}</option>
+                  <option value="missing">{statusLabel('missing')}</option>
                 </select>
               </div>
               <div>
@@ -409,7 +407,7 @@ export default function Reports() {
                       <td className="py-2.5 pr-4 text-gray-700">{doc?.issuing_body ?? '—'}</td>
                       <td className="py-2.5 pr-4 text-gray-700">{formatDate(doc?.cert_issued_date)}</td>
                       <td className="py-2.5 pr-4 text-gray-700">{formatDate(doc?.cert_expiration)}</td>
-                      <td className={`py-2.5 font-medium ${STATUS_COLOR[status]}`}>{STATUS_LABEL[status]}</td>
+                      <td className={`py-2.5 font-medium ${STATUS_COLOR[status]}`}>{statusLabel(status)}</td>
                     </tr>
                   )
                 })}

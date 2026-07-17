@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { statusLabel } from '../utils/statusLabel'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -131,7 +132,7 @@ function ProductBlock({ product, isLast }) {
 
         <div style={{ textAlign: 'right', fontFamily: SANS, whiteSpace: 'nowrap' }}>
           <div style={{ fontSize: '13px', fontWeight: '700', color: statusColor }}>
-            {sellable ? '● Compliant' : '● Not Compliant'}
+            {sellable ? `● ${statusLabel('sellable')}` : `● ${statusLabel('not-sellable')}`}
           </div>
           {statusNote && (
             <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>{statusNote}</div>
@@ -257,7 +258,7 @@ export default function Export() {
             ← Close
           </button>
           <span style={{ color: '#d1d5db' }}>|</span>
-          <span>{products.length} SKU{products.length !== 1 ? 's' : ''} · {sellableCount} compliant</span>
+          <span>{products.length} SKU{products.length !== 1 ? 's' : ''} · {sellableCount} {statusLabel('sellable').toLowerCase()}</span>
         </div>
         <button
           onClick={() => window.print()}
@@ -299,11 +300,11 @@ export default function Export() {
           <div style={{ display: 'flex', gap: '28px' }}>
             <div>
               <span style={{ fontSize: '26px', fontWeight: '800', color: '#16a34a' }}>{sellableCount}</span>
-              <span style={{ fontFamily: SANS, fontSize: '12px', color: '#6b7280', marginLeft: '6px' }}>Compliant</span>
+              <span style={{ fontFamily: SANS, fontSize: '12px', color: '#6b7280', marginLeft: '6px' }}>{statusLabel('sellable')}</span>
             </div>
             <div>
               <span style={{ fontSize: '26px', fontWeight: '800', color: notSellableCount > 0 ? '#dc2626' : '#9ca3af' }}>{notSellableCount}</span>
-              <span style={{ fontFamily: SANS, fontSize: '12px', color: '#6b7280', marginLeft: '6px' }}>Not Compliant</span>
+              <span style={{ fontFamily: SANS, fontSize: '12px', color: '#6b7280', marginLeft: '6px' }}>{statusLabel('not-sellable')}</span>
             </div>
             <div>
               <span style={{ fontSize: '26px', fontWeight: '800', color: '#111827' }}>{products.length}</span>

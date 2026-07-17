@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Shield } from 'lucide-react'
+import { statusLabel } from '../utils/statusLabel'
 
 // ─── Animated background orbs ─────────────────────────────────────────────────
 
@@ -256,7 +257,7 @@ function SolutionSection() {
 const features = [
   {
     icon: '🟢',
-    title: 'Red/Green Compliant Status',
+    title: `Red/Green ${statusLabel('sellable')} Status`,
     body: 'Every SKU shows green (valid cert on file) or red (expired or missing). One glance tells the whole story.',
   },
   {
@@ -335,7 +336,7 @@ const steps = [
   {
     n: '03',
     title: 'Watch Your Dashboard',
-    body: 'Compliant, expiring, and not-compliant counts update in real time — with drill-down into every problem SKU.',
+    body: `${statusLabel('sellable')}, expiring, and ${statusLabel('not-sellable').toLowerCase()} counts update in real time — with drill-down into every problem SKU.`,
   },
   {
     n: '04',
