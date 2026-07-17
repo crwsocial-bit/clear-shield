@@ -3,14 +3,33 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { CompanyPanel, TypeBadge } from './Companies'
 
+const TODAY = new Date().toISOString().split('T')[0]
+const IN_90 = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+
 function certStatus(p) {
-  if (!p.cert_number) return 'missing'
-  if (!p.cert_expiration) return 'no-date'
-  const today = new Date().toISOString().split('T')[0]
-  const in90  = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-  if (p.cert_expiration < today) return 'expired'
-  if (p.cert_expiration <= in90) return 'expiring'
+  const docs = p.cert_documents ?? []
+  if (docs.length === 0) return 'missing'
+  const active = docs.filter(d => !d.cert_expiration || d.cert_expiration >= TODAY)
+  if (active.length === 0) return 'expired'
+  if (active.some(d => d.cert_expiration && d.cert_expiration <= IN_90)) return 'expiring'
   return 'valid'
+}
+
+// Picks the doc most relevant to the product's overall status, for display in a single table row.
+function primaryDoc(p) {
+  const docs = p.cert_documents ?? []
+  if (docs.length === 0) return null
+  const status = certStatus(p)
+  if (status === 'expired') {
+    return [...docs].filter(d => d.cert_expiration && d.cert_expiration < TODAY)
+      .sort((a, b) => b.cert_expiration.localeCompare(a.cert_expiration))[0]
+  }
+  if (status === 'expiring') {
+    return [...docs].filter(d => d.cert_expiration && d.cert_expiration >= TODAY && d.cert_expiration <= IN_90)
+      .sort((a, b) => a.cert_expiration.localeCompare(b.cert_expiration))[0]
+  }
+  const active = docs.filter(d => !d.cert_expiration || d.cert_expiration >= TODAY)
+  return [...active].sort((a, b) => (b.cert_expiration ?? '9999-99-99').localeCompare(a.cert_expiration ?? '9999-99-99'))[0] ?? docs[0]
 }
 
 const STATUS_BADGE = {
@@ -18,10 +37,9 @@ const STATUS_BADGE = {
   expiring: 'bg-yellow-100 text-yellow-700',
   expired:  'bg-red-100 text-red-700',
   missing:  'bg-gray-100 text-gray-500',
-  'no-date':'bg-blue-100 text-blue-600',
 }
 const STATUS_LABEL = {
-  valid:'Valid', expiring:'Expiring Soon', expired:'Expired', missing:'No Cert', 'no-date':'No Exp. Date',
+  valid:'Valid', expiring:'Expiring Soon', expired:'Expired', missing:'No Cert',
 }
 
 function InfoRow({ label, value, href }) {
@@ -49,7 +67,7 @@ export default function CompanyDetail() {
     async function load() {
       const [{ data: co }, { data: prods }] = await Promise.all([
         supabase.from('companies').select('*').eq('id', id).single(),
-        supabase.from('products').select('*').order('sku'),
+        supabase.from('products').select('*, cert_documents(*)').order('sku'),
       ])
       setCompany(co)
       setProducts(prods ?? [])
@@ -160,12 +178,13 @@ export default function CompanyDetail() {
               <tbody className="divide-y divide-gray-50">
                 {linked.map(p => {
                   const status = certStatus(p)
+                  const doc    = primaryDoc(p)
                   return (
                     <tr key={p.id} className="hover:bg-gray-50">
                       <td className="px-4 py-2.5 font-mono text-xs text-gray-900">{p.sku}</td>
                       <td className="px-4 py-2.5 text-gray-700 max-w-[200px] truncate">{p.description ?? '—'}</td>
-                      <td className="px-4 py-2.5 font-mono text-xs text-gray-700">{p.cert_number ?? '—'}</td>
-                      <td className="px-4 py-2.5 text-gray-700">{p.cert_expiration ?? '—'}</td>
+                      <td className="px-4 py-2.5 font-mono text-xs text-gray-700">{doc?.cert_number ?? '—'}</td>
+                      <td className="px-4 py-2.5 text-gray-700">{doc?.cert_expiration ?? '—'}</td>
                       <td className="px-4 py-2.5">
                         <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE[status]}`}>
                           {STATUS_LABEL[status]}
