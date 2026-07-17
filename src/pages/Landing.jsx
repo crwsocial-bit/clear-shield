@@ -54,9 +54,9 @@ function LandingNavbar() {
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Shield className="w-7 h-7 text-white opacity-75" />
-          <span className="text-white text-xl font-bold tracking-tight">ClearShield</span>
+        <div className="flex items-center gap-2 bg-slate-900 rounded-lg px-3 py-1.5">
+          <Shield className="w-7 h-7" stroke="#3B82F6" fill="#FFFFFF" />
+          <span className="text-xl font-bold tracking-tight"><span style={{ color: '#FFFFFF' }}>Clear</span><span style={{ color: '#3B82F6' }}>Shield</span></span>
         </div>
         <div className="flex items-center gap-3">
           <Link
@@ -615,7 +615,7 @@ function Footer() {
     <footer className="bg-slate-950 border-t border-white/5 py-14">
       <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
         <div>
-          <span className="text-white font-bold text-lg">ClearShield</span>
+          <span className="font-bold text-lg"><span style={{ color: '#FFFFFF' }}>Clear</span><span style={{ color: '#3B82F6' }}>Shield</span></span>
           <p className="text-slate-500 text-sm mt-1">
             Compliance visibility for lead-free brass distributors.
           </p>
