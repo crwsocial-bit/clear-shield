@@ -1,22 +1,41 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
+const TODAY = new Date().toISOString().split('T')[0]
+const IN_90 = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+
 function certStatus(p) {
-  if (!p.cert_number) return 'missing'
-  if (!p.cert_expiration) return 'no-date'
-  const today = new Date().toISOString().split('T')[0]
-  const in90  = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-  if (p.cert_expiration < today) return 'expired'
-  if (p.cert_expiration <= in90) return 'expiring'
+  const docs = p.cert_documents ?? []
+  if (docs.length === 0) return 'missing'
+  const active = docs.filter(d => !d.cert_expiration || d.cert_expiration >= TODAY)
+  if (active.length === 0) return 'expired'
+  if (active.some(d => d.cert_expiration && d.cert_expiration <= IN_90)) return 'expiring'
   return 'valid'
 }
 
-const STATUS_LABEL = {
-  valid:'Valid', expiring:'Expiring Soon', expired:'Expired', missing:'No Cert on File', 'no-date':'No Expiration Date',
+// Picks the doc most relevant to the product's overall status, for display in a single table row.
+function primaryDoc(p) {
+  const docs = p.cert_documents ?? []
+  if (docs.length === 0) return null
+  const status = certStatus(p)
+  if (status === 'expired') {
+    return [...docs].filter(d => d.cert_expiration && d.cert_expiration < TODAY)
+      .sort((a, b) => b.cert_expiration.localeCompare(a.cert_expiration))[0]
+  }
+  if (status === 'expiring') {
+    return [...docs].filter(d => d.cert_expiration && d.cert_expiration >= TODAY && d.cert_expiration <= IN_90)
+      .sort((a, b) => a.cert_expiration.localeCompare(b.cert_expiration))[0]
+  }
+  const active = docs.filter(d => !d.cert_expiration || d.cert_expiration >= TODAY)
+  return [...active].sort((a, b) => (b.cert_expiration ?? '9999-99-99').localeCompare(a.cert_expiration ?? '9999-99-99'))[0] ?? docs[0]
 }
-const STATUS_PRIORITY = { expired:0, expiring:1, missing:2, 'no-date':3, valid:4 }
+
+const STATUS_LABEL = {
+  valid:'Valid', expiring:'Expiring Soon', expired:'Expired', missing:'No Cert on File',
+}
+const STATUS_PRIORITY = { expired:0, expiring:1, missing:2, valid:3 }
 const STATUS_COLOR = {
-  valid:'text-green-700', expiring:'text-yellow-700', expired:'text-red-700', missing:'text-gray-500', 'no-date':'text-blue-600',
+  valid:'text-green-700', expiring:'text-yellow-700', expired:'text-red-700', missing:'text-gray-500',
 }
 
 const EMPTY_FILTERS = { search:'', manufacturer:'', poNumber:'', status:'all', expiresFrom:'', expiresTo:'' }
@@ -29,12 +48,15 @@ function formatDate(str) {
 
 function downloadCSV(rows) {
   const headers = ['SKU','Part Number','Description','Manufacturer','Cert Number','Issuing Body','Cert Issued Date','Cert Expiration Date','PO Number','Status']
-  const data = rows.map(p => [
-    p.sku, p.part_number??'', p.description??'', p.manufacturer??'',
-    p.cert_number??'', p.issuing_body??'',
-    formatDate(p.cert_issued_date), formatDate(p.cert_expiration),
-    p.po_number??'', STATUS_LABEL[certStatus(p)],
-  ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','))
+  const data = rows.map(p => {
+    const doc = primaryDoc(p)
+    return [
+      p.sku, p.part_number??'', p.description??'', p.manufacturer??'',
+      doc?.cert_number??'', doc?.issuing_body??'',
+      formatDate(doc?.cert_issued_date), formatDate(doc?.cert_expiration),
+      p.po_number??'', STATUS_LABEL[certStatus(p)],
+    ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')
+  })
   const csv = [headers.join(','), ...data].join('\n')
   const blob = new Blob([csv], { type:'text/csv' })
   const url  = URL.createObjectURL(blob)
@@ -69,7 +91,7 @@ export default function Reports() {
     async function load() {
       const [{ data:{ user } }, { data:prods }] = await Promise.all([
         supabase.auth.getUser(),
-        supabase.from('products').select('*').order('sku'),
+        supabase.from('products').select('*, cert_documents(*)').order('sku'),
       ])
       setUserEmail(user?.email ?? '')
       setCompanyName(user?.user_metadata?.company_name ?? '')
@@ -100,8 +122,11 @@ export default function Reports() {
       if (filters.manufacturer && p.manufacturer !== filters.manufacturer) return false
       if (filters.poNumber    && p.po_number    !== filters.poNumber)    return false
       if (filters.status !== 'all' && certStatus(p) !== filters.status)  return false
-      if (filters.expiresFrom && (!p.cert_expiration || p.cert_expiration < filters.expiresFrom)) return false
-      if (filters.expiresTo   && (!p.cert_expiration || p.cert_expiration > filters.expiresTo))   return false
+      if (filters.expiresFrom || filters.expiresTo) {
+        const exp = primaryDoc(p)?.cert_expiration
+        if (filters.expiresFrom && (!exp || exp < filters.expiresFrom)) return false
+        if (filters.expiresTo   && (!exp || exp > filters.expiresTo))   return false
+      }
       if (filters.search) {
         const q = filters.search.toLowerCase()
         return p.sku?.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q) || p.manufacturer?.toLowerCase().includes(q)
@@ -151,10 +176,9 @@ export default function Reports() {
   }
 
   // Stats over export set
-  const today       = new Date().toISOString().split('T')[0]
   const total       = products.length
   const expTotal    = exportData.length
-  const certified   = exportData.filter(p => p.cert_number && p.cert_expiration && p.cert_expiration >= today).length
+  const certified   = exportData.filter(p => ['valid', 'expiring'].includes(certStatus(p))).length
   const expiring    = exportData.filter(p => certStatus(p) === 'expiring').length
   const expired     = exportData.filter(p => certStatus(p) === 'expired').length
   const missing     = exportData.filter(p => certStatus(p) === 'missing').length
@@ -266,7 +290,6 @@ export default function Reports() {
                   <option value="expiring">Expiring Soon</option>
                   <option value="expired">Expired</option>
                   <option value="missing">No Cert</option>
-                  <option value="no-date">No Exp. Date</option>
                 </select>
               </div>
               <div>
@@ -371,6 +394,7 @@ export default function Reports() {
                 {filtered.map(p => {
                   const status   = certStatus(p)
                   const selected = selectedIds.has(p.id)
+                  const doc      = primaryDoc(p)
                   return (
                     <tr key={p.id} className={selected ? 'bg-blue-50' : ''}>
                       <td className="print:hidden py-2.5 pr-3">
@@ -381,10 +405,10 @@ export default function Reports() {
                       <td className="py-2.5 pr-4 text-gray-700">{p.part_number ?? '—'}</td>
                       <td className="py-2.5 pr-4 text-gray-700 max-w-[160px] truncate">{p.description ?? '—'}</td>
                       <td className="py-2.5 pr-4 text-gray-700">{p.manufacturer ?? '—'}</td>
-                      <td className="py-2.5 pr-4 font-mono text-xs text-gray-700">{p.cert_number ?? '—'}</td>
-                      <td className="py-2.5 pr-4 text-gray-700">{p.issuing_body ?? '—'}</td>
-                      <td className="py-2.5 pr-4 text-gray-700">{formatDate(p.cert_issued_date)}</td>
-                      <td className="py-2.5 pr-4 text-gray-700">{formatDate(p.cert_expiration)}</td>
+                      <td className="py-2.5 pr-4 font-mono text-xs text-gray-700">{doc?.cert_number ?? '—'}</td>
+                      <td className="py-2.5 pr-4 text-gray-700">{doc?.issuing_body ?? '—'}</td>
+                      <td className="py-2.5 pr-4 text-gray-700">{formatDate(doc?.cert_issued_date)}</td>
+                      <td className="py-2.5 pr-4 text-gray-700">{formatDate(doc?.cert_expiration)}</td>
                       <td className={`py-2.5 font-medium ${STATUS_COLOR[status]}`}>{STATUS_LABEL[status]}</td>
                     </tr>
                   )
