@@ -164,7 +164,7 @@ export default function Navbar() {
     <nav className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-3">
       {/* Logo */}
       <div className="shrink-0 flex items-center gap-2 bg-slate-900 rounded-lg px-3 py-1.5">
-        <Shield className="w-7 h-7" stroke="#3B82F6" fill="rgba(255, 255, 255, 0.25)" />
+        <Shield className="w-7 h-7" stroke="#3B82F6" fill="#FFFFFF" />
         <span className="text-lg font-bold"><span style={{ color: '#FFFFFF' }}>Clear</span><span style={{ color: '#3B82F6' }}>Shield</span></span>
       </div>
 
