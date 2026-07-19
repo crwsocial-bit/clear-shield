@@ -3,6 +3,7 @@ import { useNavigate, NavLink } from 'react-router-dom'
 import { Shield } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuditList } from '../../lib/auditListContext'
+import { useIsAdmin } from '../../lib/useIsAdmin'
 
 function SearchBox() {
   const navigate = useNavigate()
@@ -129,6 +130,7 @@ function SearchBox() {
 export default function Navbar() {
   const navigate = useNavigate()
   const { count, setPanelOpen } = useAuditList()
+  const { isAdmin } = useIsAdmin()
   const [user, setUser] = useState(null)
   const [open, setOpen] = useState(false)
   const menuRef         = useRef(null)
@@ -177,6 +179,7 @@ export default function Navbar() {
         <NavLink to="/reports" className={navLink}>Reports</NavLink>
         <NavLink to="/compliance" className={navLink}>Compliance</NavLink>
         <NavLink to="/billing" className={navLink}>Billing</NavLink>
+        {isAdmin && <NavLink to="/admin" className={navLink}>Admin</NavLink>}
       </div>
 
       {/* Search */}

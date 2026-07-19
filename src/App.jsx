@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabaseClient'
 import { AuditListProvider } from './lib/auditListContext'
+import { useIsAdmin } from './lib/useIsAdmin'
 import AppLayout from './components/layout/AppLayout'
 import Landing from './pages/Landing'
 import Dashboard from './pages/Dashboard'
@@ -17,6 +18,7 @@ import Compliance from './pages/Compliance'
 import AuditLists from './pages/AuditLists'
 import Export from './pages/Export'
 import Billing from './pages/Billing'
+import Admin from './pages/Admin'
 
 // Shows landing page for guests; redirects authenticated users to /dashboard
 function RootRoute() {
@@ -48,6 +50,24 @@ function ProtectedRoute({ children }) {
   ) : (
     <Navigate to="/login" replace />
   )
+}
+
+// Like ProtectedRoute, but also redirects non-admins to /dashboard. Admin
+// status is re-checked server-side by the admin-update-user edge function
+// regardless — this guard is just UX, not the security boundary.
+function AdminRoute({ children }) {
+  const [session, setSession] = useState(undefined)
+  const { isAdmin, loading: adminLoading } = useIsAdmin()
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session))
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, s) => setSession(s))
+    return () => listener.subscription.unsubscribe()
+  }, [])
+
+  if (session === undefined || adminLoading) return null
+  if (!session) return <Navigate to="/login" replace />
+  return isAdmin ? <AppLayout>{children}</AppLayout> : <Navigate to="/dashboard" replace />
 }
 
 // Like ProtectedRoute but renders children directly — no AppLayout chrome
@@ -106,6 +126,14 @@ export default function App() {
               <ProtectedRoute>
                 <Billing />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <Admin />
+              </AdminRoute>
             }
           />
           <Route

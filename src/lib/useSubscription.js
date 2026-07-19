@@ -9,8 +9,18 @@ export function useSubscription() {
 
   const refetch = useCallback(async () => {
     setLoading(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setSubscription(null)
+      setProductCount(0)
+      setLoading(false)
+      return
+    }
+    // Admins can read every row via RLS, so this must stay scoped to the
+    // caller's own subscription explicitly — otherwise .maybeSingle() would
+    // throw once more than one row comes back.
     const [{ data: sub }, { count }] = await Promise.all([
-      supabase.from('subscriptions').select('*').maybeSingle(),
+      supabase.from('subscriptions').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('products').select('id', { count: 'exact', head: true }),
     ])
     setSubscription(sub ?? null)
@@ -23,12 +33,12 @@ export function useSubscription() {
   return { subscription, productCount, loading, refetch }
 }
 
-// null sku_limit means unlimited.
-export function remainingSkuSlots(subscription, productCount) {
-  if (!subscription || subscription.sku_limit == null) return Infinity
+// null sku_limit means unlimited. Admins bypass SKU limits entirely.
+export function remainingSkuSlots(subscription, productCount, isAdmin = false) {
+  if (isAdmin || !subscription || subscription.sku_limit == null) return Infinity
   return Math.max(0, subscription.sku_limit - productCount)
 }
 
-export function canAddSkus(subscription, productCount, numToAdd = 1) {
-  return remainingSkuSlots(subscription, productCount) >= numToAdd
+export function canAddSkus(subscription, productCount, numToAdd = 1, isAdmin = false) {
+  return remainingSkuSlots(subscription, productCount, isAdmin) >= numToAdd
 }

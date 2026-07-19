@@ -9,6 +9,7 @@ import { useAuditList } from '../lib/auditListContext'
 import SmartImportModal from '../components/SmartImportModal'
 import { statusLabel } from '../utils/statusLabel'
 import { useSubscription, canAddSkus, remainingSkuSlots } from '../lib/useSubscription'
+import { useIsAdmin } from '../lib/useIsAdmin'
 import { planLabel } from '../lib/plans'
 import UpgradePrompt from '../components/UpgradePrompt'
 
@@ -899,6 +900,7 @@ export default function Products() {
   const [panel, setPanel]                   = useState(null)
   const [showUpgrade, setShowUpgrade]       = useState(false)
   const { subscription } = useSubscription()
+  const { isAdmin } = useIsAdmin()
   const VALID_STATUSES = ['valid', 'expiring', 'expired', 'missing', 'not-sellable']
   const [search, setSearch]             = useState(searchParams.get('search') ?? '')
   const [statusFilter, setStatusFilter] = useState(() => {
@@ -959,7 +961,7 @@ export default function Products() {
   }
 
   function handleAddProductClick() {
-    if (!canAddSkus(subscription, products.length, 1)) {
+    if (!canAddSkus(subscription, products.length, 1, isAdmin)) {
       setShowUpgrade(true)
       return
     }
@@ -983,8 +985,8 @@ export default function Products() {
 
       const existingSkus = new Set(products.map(p => p.sku))
       const newSkuCount = rows.filter(r => !existingSkus.has(r.sku)).length
-      if (!canAddSkus(subscription, products.length, newSkuCount)) {
-        const remaining = remainingSkuSlots(subscription, products.length)
+      if (!canAddSkus(subscription, products.length, newSkuCount, isAdmin)) {
+        const remaining = remainingSkuSlots(subscription, products.length, isAdmin)
         setError(`This import would add ${newSkuCount} new SKUs, but your ${planLabel(subscription?.plan)} plan only has room for ${remaining} more. Upgrade your plan or import a smaller batch.`)
         setImporting(false)
         fileInputRef.current.value = ''
@@ -1074,7 +1076,7 @@ export default function Products() {
             + Add Product
           </button>
           <button
-            onClick={() => canAddSkus(subscription, products.length, 1) ? setShowSmartImport(true) : setShowUpgrade(true)}
+            onClick={() => canAddSkus(subscription, products.length, 1, isAdmin) ? setShowSmartImport(true) : setShowUpgrade(true)}
             className="border border-blue-200 hover:border-blue-400 text-blue-700 hover:text-blue-800 text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5"
           >
             <Sparkles className="w-4 h-4" />
@@ -1239,7 +1241,7 @@ export default function Products() {
         <SmartImportModal
           onClose={() => setShowSmartImport(false)}
           onSaved={handleSmartImportSaved}
-          remainingSlots={remainingSkuSlots(subscription, products.length)}
+          remainingSlots={remainingSkuSlots(subscription, products.length, isAdmin)}
         />
       )}
 
