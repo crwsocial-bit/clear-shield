@@ -3,10 +3,11 @@ import { stripePromise } from './stripe'
 
 // supabase.functions.invoke() automatically attaches the current session's
 // Authorization header, so the edge function can identify the caller.
-export async function startCheckout(plan) {
+export async function startCheckout(plan, interval = 'month') {
   const { data, error } = await supabase.functions.invoke('create-checkout-session', {
     body: {
       plan,
+      interval,
       success_url: `${window.location.origin}/billing?checkout=success`,
       cancel_url: `${window.location.origin}/billing?checkout=cancelled`,
     },

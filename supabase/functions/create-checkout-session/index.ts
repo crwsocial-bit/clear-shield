@@ -1,7 +1,7 @@
 import Stripe from 'npm:stripe@17.5.0'
 import { createClient } from 'npm:@supabase/supabase-js@2.108.2'
 import { CORS_HEADERS, jsonError, jsonOk } from '../_shared/cors.ts'
-import { resolvePriceId, type PlanKey } from '../_shared/plans.ts'
+import { resolvePriceId, type PlanKey, type BillingInterval } from '../_shared/plans.ts'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2024-11-20.acacia',
@@ -29,19 +29,23 @@ Deno.serve(async (req: Request) => {
 
     const body = await req.json().catch(() => ({}))
     const plan = body.plan as PlanKey
+    const interval = (body.interval ?? 'month') as BillingInterval
     const successUrl = typeof body.success_url === 'string' ? body.success_url : null
     const cancelUrl = typeof body.cancel_url === 'string' ? body.cancel_url : null
 
     if (plan !== 'starter' && plan !== 'pro') {
       return jsonError('Invalid plan. Must be "starter" or "pro".')
     }
+    if (interval !== 'month' && interval !== 'year') {
+      return jsonError('Invalid interval. Must be "month" or "year".')
+    }
     if (!successUrl || !cancelUrl) {
       return jsonError('success_url and cancel_url are required')
     }
 
-    const priceId = resolvePriceId(plan)
+    const priceId = resolvePriceId(plan, interval)
     if (!priceId) {
-      console.error(`No Stripe price configured for plan "${plan}"`)
+      console.error(`No Stripe price configured for plan "${plan}" (${interval})`)
       return jsonError('This plan is not currently available for checkout.', 500)
     }
 
@@ -77,7 +81,7 @@ Deno.serve(async (req: Request) => {
       success_url: successUrl,
       cancel_url: cancelUrl,
       subscription_data: {
-        metadata: { supabase_user_id: user.id, plan },
+        metadata: { supabase_user_id: user.id, plan, interval },
       },
     })
 

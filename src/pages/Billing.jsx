@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useSubscription } from '../lib/useSubscription'
-import { PLANS, planLabel, skuLimitLabel } from '../lib/plans'
+import { PLANS, planLabel, skuLimitLabel, formatUSD, annualSavingsPercent } from '../lib/plans'
 import { startCheckout, openBillingPortal } from '../lib/checkout'
 
 const STATUS_STYLES = {
@@ -90,7 +90,62 @@ const PLAN_FEATURES = {
   enterprise: ['Everything in Professional', 'Multi-user access', 'Custom issuing body configuration', 'Dedicated onboarding', 'SLA guarantee'],
 }
 
-function PlanCard({ planKey, currentPlan, onSelect, checkingOut }) {
+function BillingIntervalToggle({ billingInterval, onChange }) {
+  const savings = annualSavingsPercent(PLANS.starter)
+
+  return (
+    <div className="inline-flex items-center bg-gray-100 rounded-lg p-1">
+      <button
+        type="button"
+        onClick={() => onChange('month')}
+        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+          billingInterval === 'month' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+        }`}
+      >
+        Monthly
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange('year')}
+        className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+          billingInterval === 'year' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+        }`}
+      >
+        Annual
+        {savings != null && (
+          <span className="text-[10px] font-semibold text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full">
+            Save {savings}%
+          </span>
+        )}
+      </button>
+    </div>
+  )
+}
+
+function PlanPrice({ plan, billingInterval }) {
+  if (plan.monthlyPrice == null) return null
+
+  if (billingInterval === 'year') {
+    return (
+      <div className="mb-4">
+        <p className="text-3xl font-bold text-gray-900">
+          {formatUSD(plan.annualMonthly)}<span className="text-sm font-normal text-gray-500">/mo</span>
+        </p>
+        <p className="text-xs text-gray-500 mt-0.5">billed annually ({formatUSD(plan.annualPrice / 100)}/yr)</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mb-4">
+      <p className="text-3xl font-bold text-gray-900">
+        {formatUSD(plan.monthlyPrice)}<span className="text-sm font-normal text-gray-500">/mo</span>
+      </p>
+    </div>
+  )
+}
+
+function PlanCard({ planKey, currentPlan, onSelect, checkingOut, billingInterval }) {
   const plan = PLANS[planKey]
   const isCurrent = currentPlan === planKey
 
@@ -98,6 +153,12 @@ function PlanCard({ planKey, currentPlan, onSelect, checkingOut }) {
     <div className={`rounded-xl border p-6 flex flex-col ${isCurrent ? 'border-blue-400 bg-blue-50/40' : 'border-gray-200 bg-white'}`}>
       <h3 className="font-semibold text-gray-900">{plan.name}</h3>
       <p className="text-sm text-gray-500 mt-1 mb-4">{skuLimitLabel(plan.skuLimit)} SKUs</p>
+
+      {plan.checkout ? (
+        <PlanPrice plan={plan} billingInterval={billingInterval} />
+      ) : (
+        <p className="text-2xl font-bold text-gray-900 mb-4">Custom</p>
+      )}
 
       <ul className="space-y-2 mb-6 flex-1">
         {PLAN_FEATURES[planKey].map(f => (
@@ -117,7 +178,7 @@ function PlanCard({ planKey, currentPlan, onSelect, checkingOut }) {
       ) : plan.checkout ? (
         <button
           type="button"
-          onClick={() => onSelect(planKey)}
+          onClick={() => onSelect(planKey, billingInterval)}
           disabled={checkingOut}
           className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-semibold py-2 rounded-lg transition-colors"
         >
@@ -141,6 +202,8 @@ export default function Billing() {
   const [checkingOutPlan, setCheckingOutPlan]   = useState(null)
   const [managingBilling, setManagingBilling]   = useState(false)
   const [error, setError]                       = useState('')
+  // Named to avoid shadowing the global setInterval() used below for polling.
+  const [billingInterval, setBillingInterval]   = useState('month')
 
   const checkoutState = searchParams.get('checkout') // 'success' | 'cancelled' | null
 
@@ -157,11 +220,11 @@ export default function Billing() {
     return () => clearInterval(interval)
   }, [checkoutState, refetch])
 
-  async function handleSelectPlan(planKey) {
+  async function handleSelectPlan(planKey, interval) {
     setError('')
     setCheckingOutPlan(planKey)
     try {
-      await startCheckout(planKey)
+      await startCheckout(planKey, interval)
     } catch (err) {
       setError(err.message ?? 'Could not start checkout. Please try again.')
       setCheckingOutPlan(null)
@@ -213,11 +276,14 @@ export default function Billing() {
             />
           </div>
 
-          <div className="mb-4">
-            <h2 className="text-base font-semibold text-gray-900">Upgrade / Downgrade</h2>
-            <p className="text-sm text-gray-500 mt-0.5">
-              Switching plans takes effect immediately via the Stripe checkout flow.
-            </p>
+          <div className="mb-4 flex items-start justify-between flex-wrap gap-4">
+            <div>
+              <h2 className="text-base font-semibold text-gray-900">Upgrade / Downgrade</h2>
+              <p className="text-sm text-gray-500 mt-0.5">
+                Switching plans takes effect immediately via the Stripe checkout flow.
+              </p>
+            </div>
+            <BillingIntervalToggle billingInterval={billingInterval} onChange={setBillingInterval} />
           </div>
           <div className="grid md:grid-cols-3 gap-5">
             {['starter', 'pro', 'enterprise'].map(planKey => (
@@ -227,6 +293,7 @@ export default function Billing() {
                 currentPlan={subscription?.plan}
                 onSelect={handleSelectPlan}
                 checkingOut={checkingOutPlan === planKey}
+                billingInterval={billingInterval}
               />
             ))}
           </div>
