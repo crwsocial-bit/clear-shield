@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Shield } from 'lucide-react'
 import { statusLabel } from '../utils/statusLabel'
+import { PLANS, formatUSD, annualSavingsPercent } from '../lib/plans'
 
 // ─── Animated background orbs ─────────────────────────────────────────────────
 
@@ -432,8 +433,8 @@ function WhoForSection() {
 
 const plans = [
   {
+    key: 'starter',
     name: 'Starter',
-    price: 'Pricing TBD',
     tagline: 'For small distributors getting started.',
     features: [
       'Up to 500 SKUs',
@@ -446,8 +447,8 @@ const plans = [
     highlighted: false,
   },
   {
+    key: 'pro',
     name: 'Professional',
-    price: 'Pricing TBD',
     tagline: 'For distributors who need full audit readiness.',
     badge: 'Most Popular',
     features: [
@@ -462,8 +463,8 @@ const plans = [
     highlighted: true,
   },
   {
+    key: 'enterprise',
     name: 'Enterprise',
-    price: 'Custom',
     tagline: 'For large distributors and manufacturers.',
     features: [
       'Everything in Professional',
@@ -478,17 +479,93 @@ const plans = [
   },
 ]
 
+function PricingIntervalToggle({ billingInterval, onChange }) {
+  const savings = annualSavingsPercent(PLANS.starter)
+
+  return (
+    <div className="inline-flex items-center bg-slate-100 rounded-lg p-1">
+      <button
+        type="button"
+        onClick={() => onChange('month')}
+        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+          billingInterval === 'month' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+        }`}
+      >
+        Monthly
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange('year')}
+        className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+          billingInterval === 'year' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+        }`}
+      >
+        Annual
+        {savings != null && (
+          <span className="text-[10px] font-semibold text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full">
+            Save {savings}%
+          </span>
+        )}
+      </button>
+    </div>
+  )
+}
+
+function PlanPrice({ planKey, highlighted, billingInterval }) {
+  const plan = PLANS[planKey]
+
+  if (plan.monthlyPrice == null) {
+    return (
+      <p className={`text-2xl font-bold ${highlighted ? 'text-blue-400' : 'text-slate-900'}`}>
+        Custom
+      </p>
+    )
+  }
+
+  if (billingInterval === 'year') {
+    return (
+      <div>
+        <p className={`text-2xl font-bold ${highlighted ? 'text-blue-400' : 'text-slate-900'}`}>
+          {formatUSD(plan.annualMonthly)}
+          <span className={`text-base font-normal ${highlighted ? 'text-slate-400' : 'text-slate-500'}`}>/mo</span>
+        </p>
+        <div className="flex items-center gap-2 mt-1">
+          <span className={`text-xs ${highlighted ? 'text-slate-500' : 'text-slate-400'}`}>
+            billed annually ({formatUSD(plan.annualPrice / 100)}/yr)
+          </span>
+          <span className="text-[10px] font-semibold text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+            Save {annualSavingsPercent(plan)}%
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <p className={`text-2xl font-bold ${highlighted ? 'text-blue-400' : 'text-slate-900'}`}>
+      {formatUSD(plan.monthlyPrice)}
+      <span className={`text-base font-normal ${highlighted ? 'text-slate-400' : 'text-slate-500'}`}>/mo</span>
+    </p>
+  )
+}
+
 function PricingSection() {
+  const [billingInterval, setBillingInterval] = useState('month')
+
   return (
     <section className="py-28 bg-slate-50">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="max-w-2xl mx-auto text-center mb-16">
+        <div className="max-w-2xl mx-auto text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
             Simple, Transparent Pricing.
           </h2>
           <p className="text-slate-600 text-lg">
-            Flexible plans for distributors of any size. Contact us for pricing.
+            Flexible plans for distributors of any size.
           </p>
+        </div>
+
+        <div className="flex justify-center mb-16">
+          <PricingIntervalToggle billingInterval={billingInterval} onChange={setBillingInterval} />
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
@@ -524,13 +601,7 @@ function PricingSection() {
                 >
                   {plan.tagline}
                 </p>
-                <p
-                  className={`text-2xl font-bold ${
-                    plan.highlighted ? 'text-blue-400' : 'text-slate-900'
-                  }`}
-                >
-                  {plan.price}
-                </p>
+                <PlanPrice planKey={plan.key} highlighted={plan.highlighted} billingInterval={billingInterval} />
               </div>
 
               <ul className="space-y-3 mb-10 flex-1">
