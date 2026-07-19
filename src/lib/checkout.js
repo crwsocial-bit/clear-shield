@@ -1,8 +1,13 @@
 import { supabase } from './supabaseClient'
-import { stripePromise } from './stripe'
 
 // supabase.functions.invoke() automatically attaches the current session's
 // Authorization header, so the edge function can identify the caller.
+//
+// Stripe removed stripe.js's client-side redirectToCheckout(sessionId) as of
+// 2025-09-30 (https://docs.stripe.com/changelog/clover/2025-09-30/remove-redirect-to-checkout).
+// Since Stripe.js is loaded from Stripe's CDN at runtime, this broke
+// regardless of the pinned @stripe/stripe-js package version — navigating to
+// the session's own url is the current supported approach.
 export async function startCheckout(plan, interval = 'month') {
   const { data, error } = await supabase.functions.invoke('create-checkout-session', {
     body: {
@@ -13,12 +18,9 @@ export async function startCheckout(plan, interval = 'month') {
     },
   })
   if (error) throw new Error(error.message ?? 'Could not start checkout')
-  const sessionId = data?.data?.id
-  if (!sessionId) throw new Error('No checkout session returned')
-
-  const stripe = await stripePromise
-  const { error: redirectError } = await stripe.redirectToCheckout({ sessionId })
-  if (redirectError) throw new Error(redirectError.message)
+  const url = data?.data?.url
+  if (!url) throw new Error('No checkout URL returned')
+  window.location.href = url
 }
 
 // The billing portal has no Stripe.js redirect helper — the edge function's
