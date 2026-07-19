@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { statusLabel } from '../utils/statusLabel'
+import { ProductPanel } from './Products'
 
 const TODAY = new Date().toISOString().split('T')[0]
 const IN_90 = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
@@ -58,7 +59,7 @@ function StatCard({ label, value, sub, valueColor, onClick, active }) {
   )
 }
 
-function DrillTable({ rows, type }) {
+function DrillTable({ rows, type, onEdit }) {
   return (
     <table className="w-full text-sm">
       <thead>
@@ -70,6 +71,7 @@ function DrillTable({ rows, type }) {
           <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs">
             {type === 'missing' ? 'Issue' : 'Expiration'}
           </th>
+          <th className="px-5 py-2.5" />
         </tr>
       </thead>
       <tbody className="divide-y divide-gray-50">
@@ -87,6 +89,15 @@ function DrillTable({ rows, type }) {
                   : <span className="text-yellow-700">{formatDate(primaryExpiration(p, 'expiring'))}</span>
               }
             </td>
+            <td className="px-5 py-2.5 text-right">
+              <button
+                type="button"
+                onClick={() => onEdit(p)}
+                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Edit
+              </button>
+            </td>
           </tr>
         ))}
       </tbody>
@@ -94,7 +105,7 @@ function DrillTable({ rows, type }) {
   )
 }
 
-function DrillDown({ products, type, onClose }) {
+function DrillDown({ products, type, onClose, onEdit }) {
   const navigate = useNavigate()
 
   const expiredRows  = products.filter(p => certStatus(p) === 'expired')
@@ -112,12 +123,28 @@ function DrillDown({ products, type, onClose }) {
     : type === 'expiring' ? 'Expiring Within 90 Days'
     : '—'
 
+  const reportIds = type === 'expiring'
+    ? expiringRows.map(p => p.id)
+    : [...expiredRows, ...missingRows].map(p => p.id)
+
+  function handleGenerateReport() {
+    if (reportIds.length === 0) return
+    window.open(`/export?ids=${reportIds.join(',')}`, '_blank')
+  }
+
   return (
     <div className="mt-4 bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50">
         <p className="text-sm font-semibold text-gray-700">{title}</p>
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/products')} className="text-xs text-blue-600 hover:underline">
+          <button
+            onClick={handleGenerateReport}
+            disabled={reportIds.length === 0}
+            className="text-xs border border-gray-300 hover:border-gray-400 disabled:opacity-50 disabled:cursor-default text-gray-700 font-medium px-3 py-1.5 rounded-lg transition-colors"
+          >
+            Generate Report
+          </button>
+          <button onClick={() => navigate(`/products?status=${type}`)} className="text-xs text-blue-600 hover:underline">
             Fix in Products →
           </button>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
@@ -127,7 +154,7 @@ function DrillDown({ products, type, onClose }) {
       {type === 'expiring' && (
         expiringRows.length === 0
           ? <p className="px-5 py-6 text-sm text-gray-400 text-center">No certs expiring within 90 days.</p>
-          : <DrillTable rows={expiringRows} type="expiring" />
+          : <DrillTable rows={expiringRows} type="expiring" onEdit={onEdit} />
       )}
 
       {type === 'not-sellable' && (
@@ -142,7 +169,7 @@ function DrillDown({ products, type, onClose }) {
                     Expired Certifications — {expiredRows.length} SKU{expiredRows.length !== 1 ? 's' : ''}
                   </p>
                 </div>
-                <DrillTable rows={expiredRows} type="expired" />
+                <DrillTable rows={expiredRows} type="expired" onEdit={onEdit} />
               </>
             )}
             {missingRows.length > 0 && (
@@ -152,7 +179,7 @@ function DrillDown({ products, type, onClose }) {
                     No Cert on File — {missingRows.length} SKU{missingRows.length !== 1 ? 's' : ''}
                   </p>
                 </div>
-                <DrillTable rows={missingRows} type="missing" />
+                <DrillTable rows={missingRows} type="missing" onEdit={onEdit} />
               </>
             )}
           </>
@@ -165,18 +192,36 @@ function DrillDown({ products, type, onClose }) {
 export default function Dashboard() {
   const navigate = useNavigate()
   const [products, setProducts] = useState([])
+  const [companies, setCompanies] = useState([])
   const [loading, setLoading]   = useState(true)
   const [drillDown, setDrillDown] = useState(null)
+  const [editingProduct, setEditingProduct] = useState(null)
 
   useEffect(() => {
     supabase.from('products').select('*, cert_documents(*)').then(({ data, error }) => {
       if (!error) setProducts(data ?? [])
       setLoading(false)
     })
+    supabase.from('companies').select('id, name, type, custom_type').order('name')
+      .then(({ data }) => setCompanies(data ?? []))
   }, [])
 
   function toggleDrill(type) {
     setDrillDown(d => d === type ? null : type)
+  }
+
+  function handleProductSaved(saved) {
+    setProducts(ps => ps.map(p => p.id === saved.id ? { ...saved, cert_documents: p.cert_documents } : p))
+    setEditingProduct(null)
+  }
+
+  function handleProductDeleted(id) {
+    setProducts(ps => ps.filter(p => p.id !== id))
+    setEditingProduct(null)
+  }
+
+  function handleProductDocsChanged(productId, updatedDocs) {
+    setProducts(ps => ps.map(p => p.id === productId ? { ...p, cert_documents: updatedDocs } : p))
   }
 
   if (loading) {
@@ -259,9 +304,21 @@ export default function Dashboard() {
               products={products}
               type={drillDown}
               onClose={() => setDrillDown(null)}
+              onEdit={setEditingProduct}
             />
           )}
         </>
+      )}
+
+      {editingProduct && (
+        <ProductPanel
+          product={editingProduct}
+          companies={companies}
+          onClose={() => setEditingProduct(null)}
+          onSaved={handleProductSaved}
+          onDeleted={handleProductDeleted}
+          onDocsChanged={handleProductDocsChanged}
+        />
       )}
     </div>
   )

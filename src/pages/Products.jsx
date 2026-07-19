@@ -589,7 +589,7 @@ function CertDocSection({ product, userId, onDocsChanged }) {
 
 // ─── ProductPanel ─────────────────────────────────────────────────────────────
 
-function ProductPanel({ product, onClose, onSaved, onDeleted, onDocsChanged, companies }) {
+export function ProductPanel({ product, onClose, onSaved, onDeleted, onDocsChanged, companies }) {
   const navigate = useNavigate()
   const isNew = !product
   const [form, setForm] = useState(
@@ -894,7 +894,7 @@ export default function Products() {
   const [showSmartImport, setShowSmartImport] = useState(false)
   const [error, setError]                   = useState('')
   const [panel, setPanel]                   = useState(null)
-  const VALID_STATUSES = ['valid', 'expiring', 'expired', 'missing']
+  const VALID_STATUSES = ['valid', 'expiring', 'expired', 'missing', 'not-sellable']
   const [search, setSearch]             = useState(searchParams.get('search') ?? '')
   const [statusFilter, setStatusFilter] = useState(() => {
     const s = searchParams.get('status')
@@ -1014,7 +1014,11 @@ export default function Products() {
   }
 
   const filtered = products.filter(p => {
-    if (statusFilter !== 'all' && certStatus(p) !== statusFilter) return false
+    if (statusFilter !== 'all') {
+      const s = certStatus(p)
+      const matches = statusFilter === 'not-sellable' ? (s === 'expired' || s === 'missing') : s === statusFilter
+      if (!matches) return false
+    }
     if (search) {
       const q = search.toLowerCase()
       return (
@@ -1082,6 +1086,7 @@ export default function Products() {
             <option value="all">All</option>
             <option value="valid">{statusLabel('valid')}</option>
             <option value="expiring">{statusLabel('sellable')} — {statusLabel('expiring')}</option>
+            <option value="not-sellable">{statusLabel('not-sellable')} — All</option>
             <option value="expired">{statusLabel('not-sellable')} — {statusLabel('expired')}</option>
             <option value="missing">{statusLabel('not-sellable')} — {statusLabel('missing')}</option>
           </select>
