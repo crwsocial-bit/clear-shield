@@ -85,8 +85,8 @@ function CurrentPlanCard({ subscription, productCount, onManageBilling, managing
 }
 
 const PLAN_FEATURES = {
-  starter: ['Up to 500 SKUs', 'Unlimited cert documents', 'Red/Green compliance dashboard', 'CSV bulk import', 'Email support'],
-  pro: ['Unlimited SKUs', 'Everything in Starter', '30/60/90-day expiration alerts', 'One-click audit exports', 'Audit lists & saved lists', 'Priority support'],
+  starter: ['Up to 10 SKUs', 'Unlimited cert documents', 'Red/Green compliance dashboard', 'CSV bulk import', 'Email support'],
+  pro: ['Up to 25 SKUs', 'Everything in Starter', '30/60/90-day expiration alerts', 'One-click audit exports', 'Audit lists & saved lists', 'Priority support'],
   enterprise: ['Everything in Professional', 'Multi-user access', 'Custom issuing body configuration', 'Dedicated onboarding', 'SLA guarantee'],
 }
 

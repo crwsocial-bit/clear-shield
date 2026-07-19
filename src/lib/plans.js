@@ -6,7 +6,7 @@ export const PLANS = {
   starter: {
     key: 'starter',
     name: 'Starter',
-    skuLimit: 500,
+    skuLimit: 10,
     checkout: true,
     monthlyPrice: 697,        // USD/mo, billed monthly
     annualPrice: 752760,      // USD cents, yearly total when billed annually
@@ -15,7 +15,7 @@ export const PLANS = {
   pro: {
     key: 'pro',
     name: 'Professional',
-    skuLimit: null, // unlimited
+    skuLimit: 25,
     checkout: true,
     monthlyPrice: 1197,
     annualPrice: 1292760,

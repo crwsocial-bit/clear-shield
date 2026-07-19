@@ -437,7 +437,7 @@ const plans = [
     name: 'Starter',
     tagline: 'For small distributors getting started.',
     features: [
-      'Up to 500 SKUs',
+      'Up to 10 SKUs',
       'Unlimited cert documents',
       'Red/Green compliance dashboard',
       'CSV bulk import',
@@ -452,7 +452,7 @@ const plans = [
     tagline: 'For distributors who need full audit readiness.',
     badge: 'Most Popular',
     features: [
-      'Unlimited SKUs',
+      'Up to 25 SKUs',
       'Everything in Starter',
       '30/60/90-day expiration alerts',
       'One-click audit exports',

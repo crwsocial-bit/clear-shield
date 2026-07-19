@@ -11,11 +11,11 @@ export type BillingInterval = 'month' | 'year'
 export const PLAN_CATALOG: Record<PlanKey, { priceEnvVars: Record<BillingInterval, string>; skuLimit: number | null }> = {
   starter: {
     priceEnvVars: { month: 'STRIPE_PRICE_STARTER', year: 'STRIPE_PRICE_STARTER_ANNUAL' },
-    skuLimit: 500,
+    skuLimit: 10,
   },
   pro: {
     priceEnvVars: { month: 'STRIPE_PRICE_PRO', year: 'STRIPE_PRICE_PRO_ANNUAL' },
-    skuLimit: null, // null = unlimited
+    skuLimit: 25,
   },
 }
 
