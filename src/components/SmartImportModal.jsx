@@ -179,7 +179,7 @@ function ProductWarnings({ warnings }) {
   )
 }
 
-export default function SmartImportModal({ onClose, onSaved }) {
+export default function SmartImportModal({ onClose, onSaved, remainingSlots = Infinity }) {
   const fileInputRef = useRef(null)
   const [file, setFile]               = useState(null)
   const [dragging, setDragging]       = useState(false)
@@ -286,6 +286,10 @@ export default function SmartImportModal({ onClose, onSaved }) {
     const missingSku = products.find(p => !p.sku.trim())
     if (missingSku) {
       setError('Every product needs a SKU before saving.')
+      return
+    }
+    if (products.length > remainingSlots) {
+      setError(`This document has ${products.length} products, but your plan only has room for ${remainingSlots} more SKU${remainingSlots === 1 ? '' : 's'}. Remove some products or upgrade your plan.`)
       return
     }
     setSaving(true)

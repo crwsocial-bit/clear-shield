@@ -176,6 +176,7 @@ export default function Navbar() {
         <NavLink to="/audit-lists" className={navLink}>Audit Lists</NavLink>
         <NavLink to="/reports" className={navLink}>Reports</NavLink>
         <NavLink to="/compliance" className={navLink}>Compliance</NavLink>
+        <NavLink to="/billing" className={navLink}>Billing</NavLink>
       </div>
 
       {/* Search */}

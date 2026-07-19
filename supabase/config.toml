@@ -1,0 +1,7 @@
+project_id = "esdadnsoqbbuwhciynzn"
+
+# Stripe sends webhook requests with a "stripe-signature" header, not a
+# Supabase JWT — this function must skip the platform's JWT check and rely
+# on its own Stripe signature verification instead (see index.ts).
+[functions.stripe-webhook]
+verify_jwt = false

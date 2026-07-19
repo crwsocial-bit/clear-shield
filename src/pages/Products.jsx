@@ -8,6 +8,9 @@ import { TypeBadge } from './Companies'
 import { useAuditList } from '../lib/auditListContext'
 import SmartImportModal from '../components/SmartImportModal'
 import { statusLabel } from '../utils/statusLabel'
+import { useSubscription, canAddSkus, remainingSkuSlots } from '../lib/useSubscription'
+import { planLabel } from '../lib/plans'
+import UpgradePrompt from '../components/UpgradePrompt'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -894,6 +897,8 @@ export default function Products() {
   const [showSmartImport, setShowSmartImport] = useState(false)
   const [error, setError]                   = useState('')
   const [panel, setPanel]                   = useState(null)
+  const [showUpgrade, setShowUpgrade]       = useState(false)
+  const { subscription } = useSubscription()
   const VALID_STATUSES = ['valid', 'expiring', 'expired', 'missing', 'not-sellable']
   const [search, setSearch]             = useState(searchParams.get('search') ?? '')
   const [statusFilter, setStatusFilter] = useState(() => {
@@ -953,6 +958,14 @@ export default function Products() {
     await fetchProducts()
   }
 
+  function handleAddProductClick() {
+    if (!canAddSkus(subscription, products.length, 1)) {
+      setShowUpgrade(true)
+      return
+    }
+    setPanel('new')
+  }
+
   async function handleFileChange(e) {
     const file = e.target.files[0]
     if (!file) return
@@ -965,6 +978,16 @@ export default function Products() {
       if (!rows.length) {
         setError('No valid rows found. Make sure your CSV has a SKU column.')
         setImporting(false)
+        return
+      }
+
+      const existingSkus = new Set(products.map(p => p.sku))
+      const newSkuCount = rows.filter(r => !existingSkus.has(r.sku)).length
+      if (!canAddSkus(subscription, products.length, newSkuCount)) {
+        const remaining = remainingSkuSlots(subscription, products.length)
+        setError(`This import would add ${newSkuCount} new SKUs, but your ${planLabel(subscription?.plan)} plan only has room for ${remaining} more. Upgrade your plan or import a smaller batch.`)
+        setImporting(false)
+        fileInputRef.current.value = ''
         return
       }
 
@@ -1045,13 +1068,13 @@ export default function Products() {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => setPanel('new')}
+            onClick={handleAddProductClick}
             className="border border-gray-300 hover:border-gray-400 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
           >
             + Add Product
           </button>
           <button
-            onClick={() => setShowSmartImport(true)}
+            onClick={() => canAddSkus(subscription, products.length, 1) ? setShowSmartImport(true) : setShowUpgrade(true)}
             className="border border-blue-200 hover:border-blue-400 text-blue-700 hover:text-blue-800 text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5"
           >
             <Sparkles className="w-4 h-4" />
@@ -1216,6 +1239,17 @@ export default function Products() {
         <SmartImportModal
           onClose={() => setShowSmartImport(false)}
           onSaved={handleSmartImportSaved}
+          remainingSlots={remainingSkuSlots(subscription, products.length)}
+        />
+      )}
+
+      {/* SKU limit upgrade prompt */}
+      {showUpgrade && (
+        <UpgradePrompt
+          onClose={() => setShowUpgrade(false)}
+          limit={subscription?.sku_limit ?? 0}
+          count={products.length}
+          planName={planLabel(subscription?.plan)}
         />
       )}
     </div>

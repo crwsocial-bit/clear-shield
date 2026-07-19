@@ -16,6 +16,7 @@ import CompanyDetail from './pages/CompanyDetail'
 import Compliance from './pages/Compliance'
 import AuditLists from './pages/AuditLists'
 import Export from './pages/Export'
+import Billing from './pages/Billing'
 
 // Shows landing page for guests; redirects authenticated users to /dashboard
 function RootRoute() {
@@ -96,6 +97,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/billing"
+            element={
+              <ProtectedRoute>
+                <Billing />
               </ProtectedRoute>
             }
           />
